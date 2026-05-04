@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeadCapture — Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1923;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
+
+.dbar{position:fixed;top:0;left:0;right:0;height:44px;background:rgba(10,18,28,.96);display:flex;align-items:center;justify-content:center;gap:14px;z-index:9999;border-bottom:1px solid rgba(255,255,255,.08)}
+.dtag{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:1.2px;text-transform:uppercase}
+.dsep{width:1px;height:14px;background:rgba(255,255,255,.12)}
+.dtitle{font-size:13px;font-weight:600;color:rgba(255,255,255,.8)}
+.dpills{display:flex;gap:5px}
+.dpill{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.45);cursor:pointer;background:transparent;font-family:inherit;transition:all .15s}
+.dpill.on{background:#2E75B6;border-color:#2E75B6;color:#fff}
+
+.pwrap{margin-top:56px}
+.pframe{width:390px;height:844px;background:#111;border-radius:50px;padding:10px;box-shadow:0 0 0 1px #252525,0 0 0 3px #181818,0 50px 100px rgba(0,0,0,.65)}
+.pnotch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:116px;height:32px;background:#111;border-radius:0 0 18px 18px;z-index:100}
+.pscreen{width:100%;height:100%;background:#F4F6F9;border-radius:42px;overflow:hidden;position:relative}
+
+/* Screens */
+.S{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:#F4F6F9}
+.S.hide{display:none}
+.S.in{animation:sIn .26s cubic-bezier(.4,0,.2,1) both}
+.S.out{animation:sOut .26s cubic-bezier(.4,0,.2,1) both}
+.S.back-in{animation:bIn .26s cubic-bezier(.4,0,.2,1) both}
+@keyframes sIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes sOut{from{transform:translateX(0)}to{transform:translateX(-28%);opacity:0}}
+@keyframes bIn{from{transform:translateX(-28%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* Status bar */
+.sb{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 8px;flex-shrink:0}
+.sb-t{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.sb-i{display:flex;align-items:center;gap:4px;font-size:12px}
+.wh .sb-t,.wh .sb-i{color:#fff}
+.bk .sb-t,.bk .sb-i{color:#111}
+
+/* Nav */
+.nav{height:52px;display:flex;align-items:center;padding:0 14px;flex-shrink:0}
+.nb{background:#1F4E79}.nb2{background:#2E75B6}
+.nw{background:#fff;border-bottom:1px solid #E9EAEC}
+.nav-back{background:none;border:none;font-family:inherit;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:3px;padding:8px 0;color:#fff;flex-shrink:0}
+.nav-back.dk{color:#1F4E79}
+.nav-title{flex:1;text-align:center;font-size:17px;font-weight:700;color:#fff}
+.nav-title.dk{color:#111}
+.nav-action{background:none;border:none;font-family:inherit;font-size:14px;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;flex-shrink:0;padding:6px 0}
+
+/* Context bar */
+.ctx{background:#1F4E79;padding:9px 16px;display:flex;align-items:center;gap:9px;flex-shrink:0}
+.cdot{width:8px;height:8px;background:#4ADE80;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.cname{color:#fff;font-size:13px;font-weight:700}
+.cdetail{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.cbadge{margin-left:auto;background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px}
+
+/* Hero */
+.hero{background:#1A3D68;padding:54px 24px 32px;text-align:center;flex-shrink:0}
+.logo{font-size:29px;font-weight:800;color:#fff;letter-spacing:-.8px}
+.logo-dot{color:#4ADE80}
+.logo-sub{font-size:13px;color:rgba(255,255,255,.55);margin-top:3px}
+.greeting{display:inline-block;margin-top:14px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);font-size:13px;padding:6px 16px;border-radius:20px}
+
+/* Section labels */
+.slabel{padding:14px 16px 6px;font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:8px}
+
+/* Cards */
+.card{background:#fff;border-radius:16px;margin:0 14px 12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+/* Mode cards */
+.mcard{background:#fff;border-radius:18px;margin:0 14px 11px;padding:17px;display:flex;align-items:center;gap:13px;cursor:pointer;border:2px solid transparent;transition:all .16s;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.mcard:active{transform:scale(.98);border-color:#2E75B6}
+.micon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.mcard-title{font-size:16px;font-weight:700;color:#111;margin-bottom:3px}
+.mcard-sub{font-size:12px;color:#6B7280;line-height:1.4}
+.marrow{margin-left:auto;color:#D1D5DB;font-size:22px;line-height:1}
+
+/* Event items */
+.evitem{background:#fff;border-radius:14px;margin:0 14px 9px;padding:13px;display:flex;align-items:center;gap:11px;cursor:pointer;border:1.5px solid transparent;transition:all .14s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.evitem:active{border-color:#2E75B6;transform:scale(.99)}
+.evicon{width:42px;height:42px;background:#EBF4FC;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.evname{font-size:14px;font-weight:700;color:#111;margin-bottom:2px}
+.evdetail{font-size:12px;color:#6B7280}
+.evarrow{margin-left:auto;color:#D1D5DB;font-size:18px}
+
+/* Scan button */
+.scanwrap{padding:12px 14px 4px}
+.scanbtn{width:100%;padding:14px;background:#1F4E79;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .14s;box-shadow:0 4px 14px rgba(31,78,121,.28)}
+.scanbtn:active{transform:scale(.98);background:#163a5e}
+.scanbtn.blue2{background:#2E75B6;box-shadow:0 4px 14px rgba(46,117,182,.28)}
+.scanbtn.blue2:active{background:#2563A8}
+
+/* Form */
+.fg{margin-bottom:13px}
+.fl{font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.req{width:5px;height:5px;background:#EF4444;border-radius:50%;display:inline-block;flex-shrink:0}
+.fi,.fs,.fta{width:100%;padding:11px 12px;border:1.5px solid #E5E7EB;border-radius:10px;font-size:15px;font-family:inherit;color:#111;background:#fff;transition:border-color .14s,box-shadow .14s;-webkit-appearance:none;appearance:none}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:#2E75B6;box-shadow:0 0 0 3px rgba(46,117,182,.11)}
+.fi.ocr{border-color:#2E75B6;background:#EBF4FC}
+.fta{resize:none;min-height:76px;line-height:1.5}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+
+/* OCR tag */
+.ocrtag{display:inline-flex;align-items:center;gap:3px;background:#EBF4FC;color:#2E75B6;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border:1.5px solid #E5E7EB;border-radius:20px;font-size:13px;font-family:inherit;cursor:pointer;background:#fff;color:#374151;transition:all .13s}
+.chip.on{border-color:#2E75B6;background:#EBF4FC;color:#1F4E79;font-weight:600}
+
+/* Toggle */
+.trow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F3F4F6}
+.trow:last-child{border-bottom:none}
+.tlabel{font-size:15px;color:#111;font-weight:500}
+.tsub{font-size:12px;color:#9CA3AF;margin-top:1px}
+.tog{width:44px;height:26px;background:#D1D5DB;border-radius:13px;position:relative;cursor:pointer;transition:background .18s;flex-shrink:0}
+.tog.on{background:#2E75B6}
+.tog::after{content:'';width:20px;height:20px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on::after{left:21px}
+
+/* Rating */
+.ratingrow{display:flex;gap:6px}
+.rbtn{flex:1;padding:9px 4px;border:1.5px solid #E5E7EB;border-radius:9px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;color:#6B7280;transition:all .13s;font-family:inherit}
+.rbtn.on{border-color:#2E75B6;background:#EBF4FC;color:#1F4E79}
+
+/* Buttons */
+.btnp{width:100%;padding:14px;background:#1F4E79;color:#fff;border:none;border-radius:13px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .14s}
+.btnp:active{background:#163a5e;transform:scale(.985)}
+.btnp.b2{background:#2E75B6}
+.btnp.b2:active{background:#2563A8}
+.btno{width:100%;padding:12px;background:transparent;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;color:#6B7280;transition:all .14s;margin-top:8px}
+.btno:active{background:#F3F4F6}
+
+/* Collapsible */
+.coll{background:#fff;border-radius:16px;margin:0 14px 12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.chead{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;cursor:pointer;font-size:15px;font-weight:700;color:#111;border-bottom:1px solid #F3F4F6;user-select:none}
+.chead.open{border-bottom-color:#E5E7EB}
+.carrow{color:#9CA3AF;font-size:11px;transition:transform .18s}
+.chead.open .carrow{transform:rotate(180deg)}
+.cbody{padding:14px 15px;display:none}
+.cbody.open{display:block}
+.ctier{background:#EBF4FC;color:#1F4E79;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Info box */
+.info{background:#EBF4FC;border-left:3px solid #2E75B6;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px}
+.info p{font-size:13px;color:#1E3A5F;line-height:1.45}
+
+/* OCR scanner */
+.ocrscreen{flex:1;background:#080808;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative}
+.ocrtabs{display:flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px;margin-bottom:24px;width:100%;max-width:270px}
+.ocrtab{flex:1;padding:8px;border:none;background:transparent;font-family:inherit;font-size:13px;color:rgba(255,255,255,.45);cursor:pointer;border-radius:8px;transition:all .14s}
+.ocrtab.on{background:#2E75B6;color:#fff;font-weight:700}
+.vf{width:272px;height:164px;border:1.5px solid rgba(255,255,255,.18);border-radius:14px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.vc{position:absolute;width:22px;height:22px;border-style:solid;border-color:#2E75B6}
+.vtl{top:-1.5px;left:-1.5px;border-width:3px 0 0 3px;border-radius:7px 0 0 0}
+.vtr{top:-1.5px;right:-1.5px;border-width:3px 3px 0 0;border-radius:0 7px 0 0}
+.vbl{bottom:-1.5px;left:-1.5px;border-width:0 0 3px 3px;border-radius:0 0 0 7px}
+.vbr{bottom:-1.5px;right:-1.5px;border-width:0 3px 3px 0;border-radius:0 0 7px 0}
+.sline{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,#2E75B6,transparent);animation:scanmove 1.8s ease-in-out infinite}
+@keyframes scanmove{0%{top:14px;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:138px;opacity:0}}
+.vfhint{color:rgba(255,255,255,.35);font-size:12px;text-align:center;z-index:2;position:relative}
+.ocrlbl{color:rgba(255,255,255,.6);font-size:13px;margin-top:18px;text-align:center}
+.shutter{width:66px;height:66px;background:#2E75B6;border-radius:50%;border:4px solid rgba(255,255,255,.22);cursor:pointer;margin-top:26px;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .13s;box-shadow:0 0 0 6px rgba(46,117,182,.18);user-select:none}
+.shutter:active{transform:scale(.91)}
+.shutter-hint{color:rgba(255,255,255,.3);font-size:12px;margin-top:10px}
+.ocrproc{position:absolute;inset:0;background:rgba(8,8,8,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:42px}
+.ocrproc.show{display:flex}
+.spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.12);border-top-color:#2E75B6;border-radius:50%;animation:sp .65s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.proctext{color:#fff;font-size:14px;font-weight:600}
+.procsub{color:rgba(255,255,255,.45);font-size:12px}
+
+/* Success */
+.succinner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.succcircle{width:84px;height:84px;background:#DCFCE7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:18px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.succtitle{font-size:23px;font-weight:800;color:#111;margin-bottom:7px}
+.succsub{font-size:14px;color:#6B7280;line-height:1.6;margin-bottom:18px}
+.dynid{background:#F3F4F6;border-radius:10px;padding:11px 15px;font-family:monospace;font-size:12px;color:#1F4E79;margin-bottom:18px;display:flex;align-items:center;gap:7px}
+.hotbadge{display:inline-flex;align-items:center;gap:4px;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:14px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin-bottom:22px}
+.statcard{background:#F3F4F6;border-radius:12px;padding:12px;text-align:center}
+.statval{font-size:22px;font-weight:800;color:#1F4E79}
+.statlbl{font-size:11px;color:#9CA3AF;margin-top:2px}
+
+/* Draft toast */
+.toast{position:absolute;bottom:60px;left:20px;right:20px;background:#111;color:#fff;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;text-align:center;z-index:200;display:none;animation:toastIn .25s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Home leads */
+.leadadd{margin:0 14px 12px;padding:13px;background:#fff;border-radius:14px;display:flex;align-items:center;gap:11px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.05);border:1.5px solid transparent;transition:all .14s}
+.leadadd:active{border-color:#2E75B6;transform:scale(.99)}
+.lavatar{width:40px;height:40px;border-radius:50%;background:#EBF4FC;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#1F4E79;flex-shrink:0}
+.lname{font-size:14px;font-weight:700;color:#111}
+.lcompany{font-size:12px;color:#6B7280;margin-top:1px}
+.lchip{margin-left:auto;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;flex-shrink:0}
+.lchip.hot{background:#FEF3C7;color:#92400E}
+.lchip.ok{background:#DCFCE7;color:#166534}
+
+/* Lead detail */
+.ld-hero{background:#1A3D68;padding:52px 20px 22px;position:relative}
+.ld-avatar-large{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;margin-bottom:12px}
+.ld-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:3px}
+.ld-title{font-size:14px;color:rgba(255,255,255,.65)}
+.ld-row{display:flex;align-items:center;padding:13px 0;border-bottom:1px solid #F3F4F6}
+.ld-row:last-child{border-bottom:none}
+.ld-key{font-size:13px;color:#9CA3AF;width:120px;flex-shrink:0}
+.ld-val{font-size:13px;color:#111;font-weight:500;flex:1}
+.ld-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.ld-tag.blue{background:#EBF4FC;color:#1F4E79}
+.ld-tag.hot{background:#FEF3C7;color:#92400E}
+.ld-tag.green{background:#DCFCE7;color:#166534}
+.ld-actions{display:flex;gap:9px;padding:12px 14px}
+.ld-action-btn{flex:1;padding:12px;border:1.5px solid #E5E7EB;border-radius:12px;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#1F4E79;cursor:pointer;text-align:center;transition:all .14s}
+.ld-action-btn:active{background:#EBF4FC}
+
+/* Home sync bar */
+.syncbar{margin:0 14px 14px;background:#DCFCE7;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px}
+.syncbar p{font-size:13px;color:#166534;font-weight:600}
+.syncbar span{font-size:12px;color:#4ADE80;font-size:16px}
+
+/* Home stats */
+.homestats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 14px 14px}
+.hstat{background:#fff;border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.hstat-val{font-size:20px;font-weight:800;color:#1F4E79}
+.hstat-label{font-size:10px;color:#9CA3AF;margin-top:2px}
+
+.bsafe{height:28px;flex-shrink:0}
+
+.divider{height:1px;background:#F3F4F6;margin:10px 0}
+.submitarea{padding:10px 14px 6px}
+
+.infobox{background:#EBF4FC;border-left:3px solid #2E75B6;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:12px}
+.infobox p{font-size:13px;color:#1E3A5F;line-height:1.45}
+</style>
+</head>
+<body>
+
+<div class="dbar">
+  <span class="dtag">Demo</span>
+  <span class="dsep"></span>
+  <span class="dtitle">LeadCapture — Field Sales Tool</span>
+  <span class="dsep"></span>
+  <div class="dpills">
+    <button class="dpill on" onclick="jump('home')">Home</button>
+    <button class="dpill" onclick="jump('ev-picker')">Event flow</button>
+    <button class="dpill" onclick="jump('meeting')">Meeting flow</button>
+  </div>
+</div>
+
+<div class="pwrap">
+<div class="pframe" style="position:relative">
+  <div class="pnotch"></div>
+  <div class="pscreen">
+
+  <!-- ══════════════════════════════════════════════
+       HOME
+  ══════════════════════════════════════════════ -->
+  <div class="S" id="home">
+    <div class="hero">
+      <div class="sb wh" style="background:transparent;position:absolute;top:10px;left:0;right:0;z-index:10">
+        <div class="sb-t">9:41</div>
+        <div class="sb-i">●●● ⊙ ⚡</div>
+      </div>
+      <div style="padding-top:36px">
+        <div class="logo">Lead<span class="logo-dot">.</span>Capture</div>
+        <div class="logo-sub">Payment &amp; Financial Services</div>
+        <div class="greeting">Good morning, Alex 👋</div>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="slabel">Choose mode</div>
+
+      <div class="mcard" onclick="goto('ev-picker')">
+        <div class="micon" style="background:#EBF4FC;font-size:24px">🎪</div>
+        <div style="flex:1">
+          <div class="mcard-title">Event Mode</div>
+          <div class="mcard-sub">Trade shows &amp; conferences<br>OCR scanning · Auto UTM attribution</div>
+        </div>
+        <div class="marrow">›</div>
+      </div>
+
+      <div class="mcard" onclick="goto('meeting')">
+        <div class="micon" style="background:#F0FDF4;font-size:24px">💼</div>
+        <div style="flex:1">
+          <div class="mcard-title">Meeting Mode</div>
+          <div class="mcard-sub">Sales meetings &amp; field visits<br>Full qualification · Manual attribution</div>
+        </div>
+        <div class="marrow">›</div>
+      </div>
+
+      <div class="slabel">Today · 3 leads</div>
+
+      <div class="syncbar">
+        <span>✓</span>
+        <p>All leads synced to Dynamics 365</p>
+      </div>
+
+      <div class="homestats">
+        <div class="hstat"><div class="hstat-val" id="home-count">3</div><div class="hstat-label">Captured</div></div>
+        <div class="hstat"><div class="hstat-val">100%</div><div class="hstat-label">Synced</div></div>
+        <div class="hstat"><div class="hstat-val">1</div><div class="hstat-label">Hot leads</div></div>
+      </div>
+
+      <div class="leadadd" onclick="goto('lead-detail-mira')">
+        <div class="lavatar">MK</div>
+        <div><div class="lname">Mira Kowalski</div><div class="lcompany">Fintech Nordic AB · Gateway</div></div>
+        <div class="lchip hot">Hot 🔥</div>
+      </div>
+      <div class="leadadd" onclick="goto('lead-detail-james')">
+        <div class="lavatar">JP</div>
+        <div><div class="lname">James Park</div><div class="lcompany">Retail Group EU · Acquiring</div></div>
+        <div class="lchip ok">Synced ✓</div>
+      </div>
+      <div class="leadadd" onclick="goto('lead-detail-sara')">
+        <div class="lavatar">SF</div>
+        <div><div class="lname">Sara Flores</div><div class="lcompany">PayCo Ltd · Open Banking</div></div>
+        <div class="lchip ok">Synced ✓</div>
+      </div>
+
+      <div style="padding:10px 16px 4px;text-align:center;font-size:12px;color:#C4C9D4">
+        Dynamics 365 connected · Last sync 2 min ago
+      </div>
+      <div class="bsafe"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LEAD DETAIL — MIRA
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="lead-detail-mira">
+    <div style="background:#1A3D68;padding:50px 18px 18px;position:relative;flex-shrink:0">
+      <div class="sb wh" style="background:transparent;position:absolute;top:10px;left:0;right:0;z-index:10">
+        <div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div>
+      </div>
+      <button class="nav-back" style="position:absolute;top:48px;left:14px" onclick="back()">‹ Home</button>
+      <div style="padding-top:28px;display:flex;align-items:flex-start;gap:14px">
+        <div class="ld-avatar-large">MK</div>
+        <div>
+          <div class="ld-name">Mira Kowalski</div>
+          <div class="ld-title">Chief Payments Officer · Fintech Nordic AB</div>
+          <div style="margin-top:8px"><span class="ld-tag hot">🔥 Hot lead</span>&nbsp;<span class="ld-tag blue">Event Mode</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ld-actions">
+      <div class="ld-action-btn">📧 Email</div>
+      <div class="ld-action-btn">📞 Call</div>
+      <div class="ld-action-btn">🔗 Dynamics</div>
+    </div>
+    <div class="scroll">
+      <div class="card" style="margin-top:4px">
+        <div class="ld-row"><div class="ld-key">Email</div><div class="ld-val" style="color:#2E75B6">mira.k@fintechnordic.se</div></div>
+        <div class="ld-row"><div class="ld-key">Phone</div><div class="ld-val">+46 73 456 7890</div></div>
+        <div class="ld-row"><div class="ld-key">Country</div><div class="ld-val">Sweden</div></div>
+        <div class="ld-row"><div class="ld-key">Company size</div><div class="ld-val">101–1,000</div></div>
+        <div class="ld-row"><div class="ld-key">Payment volume</div><div class="ld-val">£10M – £50M / yr</div></div>
+        <div class="ld-row"><div class="ld-key">Products</div><div class="ld-val"><span class="ld-tag blue">Gateway</span>&nbsp;<span class="ld-tag blue">Open Banking</span></div></div>
+        <div class="ld-row"><div class="ld-key">Timeline</div><div class="ld-val">Immediate (&lt;3 months)</div></div>
+        <div class="ld-row"><div class="ld-key">Decision maker</div><div class="ld-val"><span class="ld-tag green">Economic buyer</span></div></div>
+        <div class="ld-row"><div class="ld-key">Confidence</div><div class="ld-val">⭐⭐⭐⭐⭐ (5/5)</div></div>
+        <div class="ld-row" style="border-bottom:none"><div class="ld-key">Source</div><div class="ld-val">Money20/20 EU 2026<br><span style="font-size:11px;color:#9CA3AF;font-family:monospace">utm_campaign=M2020-EU-2026</span></div></div>
+      </div>
+      <div class="card">
+        <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Conversation notes</div>
+        <div style="font-size:14px;color:#374151;line-height:1.6">"Mira is actively evaluating gateway providers — current contract with Worldpay expires in Q3. Pain point is lack of Open Banking support and high FX fees on EU corridors. Very engaged, asked for a sandbox environment access. Introduced to our FX product roadmap — strong fit."</div>
+      </div>
+      <div class="card">
+        <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Dynamics 365 record</div>
+        <div class="ld-row"><div class="ld-key">Lead ID</div><div class="ld-val" style="font-family:monospace;font-size:12px">LEAD-2026-00843</div></div>
+        <div class="ld-row" style="border-bottom:none"><div class="ld-key">OCR source</div><div class="ld-val"><span class="ocrtag">OCR filled</span> Badge scan</div></div>
+      </div>
+      <div class="submitarea">
+        <button class="btnp" onclick="back()">Back to home</button>
+      </div>
+      <div class="bsafe"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LEAD DETAIL — JAMES
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="lead-detail-james">
+    <div style="background:#1A3D68;padding:50px 18px 18px;position:relative;flex-shrink:0">
+      <div class="sb wh" style="background:transparent;position:absolute;top:10px;left:0;right:0;z-index:10">
+        <div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div>
+      </div>
+      <button class="nav-back" style="position:absolute;top:48px;left:14px" onclick="back()">‹ Home</button>
+      <div style="padding-top:28px;display:flex;align-items:flex-start;gap:14px">
+        <div class="ld-avatar-large">JP</div>
+        <div>
+          <div class="ld-name">James Park</div>
+          <div class="ld-title">Head of Payments · Retail Group EU</div>
+          <div style="margin-top:8px"><span class="ld-tag green">Synced ✓</span>&nbsp;<span class="ld-tag blue">Event Mode</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ld-actions">
+      <div class="ld-action-btn">📧 Email</div>
+      <div class="ld-action-btn">📞 Call</div>
+      <div class="ld-action-btn">🔗 Dynamics</div>
+    </div>
+    <div class="scroll">
+      <div class="card" style="margin-top:4px">
+        <div class="ld-row"><div class="ld-key">Email</div><div class="ld-val" style="color:#2E75B6">j.park@retailgroupeu.com</div></div>
+        <div class="ld-row"><div class="ld-key">Phone</div><div class="ld-val">+44 77 234 5678</div></div>
+        <div class="ld-row"><div class="ld-key">Country</div><div class="ld-val">United Kingdom</div></div>
+        <div class="ld-row"><div class="ld-key">Payment volume</div><div class="ld-val">£50M – £250M / yr</div></div>
+        <div class="ld-row"><div class="ld-key">Products</div><div class="ld-val"><span class="ld-tag blue">Acquiring</span>&nbsp;<span class="ld-tag blue">FX</span></div></div>
+        <div class="ld-row"><div class="ld-key">Timeline</div><div class="ld-val">Short-term (3–6 months)</div></div>
+        <div class="ld-row"><div class="ld-key">Confidence</div><div class="ld-val">⭐⭐⭐⭐ (4/5)</div></div>
+        <div class="ld-row" style="border-bottom:none"><div class="ld-key">Source</div><div class="ld-val">Money20/20 EU 2026</div></div>
+      </div>
+      <div class="submitarea">
+        <button class="btnp" onclick="back()">Back to home</button>
+      </div>
+      <div class="bsafe"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LEAD DETAIL — SARA
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="lead-detail-sara">
+    <div style="background:#1A3D68;padding:50px 18px 18px;position:relative;flex-shrink:0">
+      <div class="sb wh" style="background:transparent;position:absolute;top:10px;left:0;right:0;z-index:10">
+        <div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div>
+      </div>
+      <button class="nav-back" style="position:absolute;top:48px;left:14px" onclick="back()">‹ Home</button>
+      <div style="padding-top:28px;display:flex;align-items:flex-start;gap:14px">
+        <div class="ld-avatar-large">SF</div>
+        <div>
+          <div class="ld-name">Sara Flores</div>
+          <div class="ld-title">VP Product · PayCo Ltd</div>
+          <div style="margin-top:8px"><span class="ld-tag green">Synced ✓</span>&nbsp;<span class="ld-tag" style="background:#F0FDF4;color:#166534">Meeting Mode</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ld-actions">
+      <div class="ld-action-btn">📧 Email</div>
+      <div class="ld-action-btn">📞 Call</div>
+      <div class="ld-action-btn">🔗 Dynamics</div>
+    </div>
+    <div class="scroll">
+      <div class="card" style="margin-top:4px">
+        <div class="ld-row"><div class="ld-key">Email</div><div class="ld-val" style="color:#2E75B6">s.flores@payco.io</div></div>
+        <div class="ld-row"><div class="ld-key">Phone</div><div class="ld-val">+34 91 234 5678</div></div>
+        <div class="ld-row"><div class="ld-key">Country</div><div class="ld-val">Spain</div></div>
+        <div class="ld-row"><div class="ld-key">Products</div><div class="ld-val"><span class="ld-tag blue">Open Banking</span>&nbsp;<span class="ld-tag blue">Data &amp; Analytics</span></div></div>
+        <div class="ld-row"><div class="ld-key">Lead source</div><div class="ld-val">LinkedIn outreach</div></div>
+        <div class="ld-row"><div class="ld-key">Follow-up</div><div class="ld-val">2 May 2026 — agreed</div></div>
+        <div class="ld-row" style="border-bottom:none"><div class="ld-key">Confidence</div><div class="ld-val">⭐⭐⭐ (3/5)</div></div>
+      </div>
+      <div class="submitarea">
+        <button class="btnp" onclick="back()">Back to home</button>
+      </div>
+      <div class="bsafe"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       EVENT PICKER
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="ev-picker">
+    <div class="sb wh" style="background:#1F4E79"><div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div></div>
+    <div class="nav nb">
+      <button class="nav-back" onclick="back()">‹ Back</button>
+      <div class="nav-title">Select event</div>
+    </div>
+    <div class="scroll">
+      <div class="slabel">Your assigned events</div>
+      <div class="evitem" onclick="pickEvent('Money20/20 Europe 2026','RAI Amsterdam','25–27 May 2026','M2020-EU-2026')">
+        <div class="evicon">💳</div>
+        <div><div class="evname">Money20/20 Europe 2026</div><div class="evdetail">RAI Amsterdam · 25–27 May 2026</div></div>
+        <div class="evarrow">›</div>
+      </div>
+      <div class="evitem" onclick="pickEvent('Sibos 2026','Sydney ICC','12–15 Oct 2026','SIBOS-2026-AU')">
+        <div class="evicon">🌏</div>
+        <div><div class="evname">Sibos 2026</div><div class="evdetail">Sydney ICC · 12–15 Oct 2026</div></div>
+        <div class="evarrow">›</div>
+      </div>
+      <div class="evitem" onclick="pickEvent('Pay360 2026','ExCeL London','4–5 Mar 2026','PAY360-2026-UK')">
+        <div class="evicon">🇬🇧</div>
+        <div><div class="evname">Pay360 2026</div><div class="evdetail">ExCeL London · 4–5 Mar 2026</div></div>
+        <div class="evarrow">›</div>
+      </div>
+      <div class="evitem" onclick="pickEvent('Nordic Payments Summit','Clarion Hotel Stockholm','19 Jun 2026','NPS-2026-SE')">
+        <div class="evicon">🇸🇪</div>
+        <div><div class="evname">Nordic Payments Summit</div><div class="evdetail">Clarion Stockholm · 19 Jun 2026</div></div>
+        <div class="evarrow">›</div>
+      </div>
+      <div style="margin:14px 14px 0;background:#F3F4F6;border-radius:12px;padding:13px">
+        <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">UTM attribution</div>
+        <div style="font-size:13px;color:#374151;line-height:1.55">Selecting an event automatically applies its UTM parameters to every lead you capture — no manual input needed.</div>
+      </div>
+      <div class="bsafe"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       EVENT FORM
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="ev-form">
+    <div class="sb wh" style="background:#1F4E79"><div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div></div>
+    <div class="nav nb">
+      <button class="nav-back" onclick="back()">‹ Events</button>
+      <div class="nav-title">New lead</div>
+      <button class="nav-action" onclick="saveDraft('ev-form')" style="font-size:13px;padding:6px 0">Draft</button>
+    </div>
+    <div class="ctx">
+      <div class="cdot"></div>
+      <div>
+        <div class="cname" id="ev-ctx-name">Money20/20 Europe 2026</div>
+        <div class="cdetail" id="ev-ctx-detail">RAI Amsterdam · 25–27 May 2026</div>
+      </div>
+      <div class="cbadge" id="ev-ctx-count">4 leads</div>
+    </div>
+    <div class="scroll">
+      <div class="scanwrap">
+        <button class="scanbtn" onclick="openOcr('event')">
+          <span style="font-size:18px">⬜</span> Scan badge or business card
+        </button>
+      </div>
+      <div style="padding:8px 14px 2px;text-align:center;font-size:12px;color:#9CA3AF">or enter manually below</div>
+
+      <div class="slabel">Contact details <span class="ocrtag" id="ev-ocr-tag" style="display:none">OCR filled</span></div>
+      <div class="card">
+        <div class="frow">
+          <div class="fg"><div class="fl"><span class="req"></span>First</div><input class="fi" id="ev-first" placeholder="First name"></div>
+          <div class="fg"><div class="fl"><span class="req"></span>Last</div><input class="fi" id="ev-last" placeholder="Last name"></div>
+        </div>
+        <div class="fg"><div class="fl"><span class="req"></span>Job title</div><input class="fi" id="ev-jobtitle" placeholder="e.g. VP of Finance"></div>
+        <div class="fg"><div class="fl"><span class="req"></span>Company</div><input class="fi" id="ev-company" placeholder="Search or enter company…"></div>
+        <div class="fg"><div class="fl"><span class="req"></span>Email</div><input class="fi" id="ev-email" type="email" placeholder="name@company.com"></div>
+        <div class="fg" style="margin-bottom:0"><div class="fl"><span class="req"></span>Phone</div><input class="fi" id="ev-phone" type="tel" placeholder="+46 70 000 0000"></div>
+      </div>
+
+      <div style="margin:0 14px 12px">
+        <div class="infobox">
+          <p>🔗 <strong>Auto-attribution:</strong> This lead will be tagged with <strong id="ev-utm-label">utm_campaign=M2020-EU-2026</strong> — no action needed.</p>
+        </div>
+      </div>
+
+      <div class="slabel">Qualification</div>
+      <div class="card">
+        <div class="fg">
+          <div class="fl">Annual payment volume</div>
+          <select class="fs"><option value="">Select range…</option><option>Less than £1M</option><option>£1M – £10M</option><option>£10M – £50M</option><option>£50M – £250M</option><option>More than £250M</option></select>
+        </div>
+        <div class="fg">
+          <div class="fl">Buying timeline</div>
+          <select class="fs"><option value="">Select…</option><option>Immediate (&lt;3 months)</option><option>Short-term (3–6 months)</option><option>Mid-term (6–12 months)</option><option>Exploring only</option></select>
+        </div>
+        <div class="fg">
+          <div class="fl">Products of interest</div>
+          <div class="chips">
+            <button class="chip" onclick="chip(this)">Payments</button>
+            <button class="chip" onclick="chip(this)">Financial services</button>
+            <button class="chip" onclick="chip(this)">Fiscalisation</button>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">Pain points</div>
+          <div class="chips">
+            <button class="chip" onclick="chip(this)">High fees</button>
+            <button class="chip" onclick="chip(this)">Poor reliability</button>
+            <button class="chip" onclick="chip(this)">Missing features</button>
+            <button class="chip" onclick="chip(this)">Compliance</button>
+            <button class="chip" onclick="chip(this)">Integration issues</button>
+            <button class="chip" onclick="chip(this)">International growth</button>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <div class="fl"><span class="req"></span>Partner type</div>
+          <div class="chips" id="ev-partner">
+            <button class="chip" onclick="partnerChip(this,'ev-partner')">Merchant</button>
+            <button class="chip" onclick="partnerChip(this,'ev-partner')">ISV</button>
+            <button class="chip" onclick="partnerChip(this,'ev-partner')">Reseller</button>
+            <button class="chip" onclick="partnerChip(this,'ev-partner')">IHV</button>
+            <button class="chip" onclick="partnerChip(this,'ev-partner')">Other</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slabel">Notes</div>
+      <div class="card">
+        <div class="fg"><div class="fl">Conversation summary</div><textarea class="fta" id="ev-notes" placeholder="What was discussed? Why is this a good lead?"></textarea></div>
+        <div class="trow">
+          <div><div class="tlabel">Hot lead 🔥</div><div class="tsub">Flag for same-day AE follow-up</div></div>
+          <div class="tog" id="ev-hot-tog" onclick="tog(this)"></div>
+        </div>
+        <div class="divider"></div>
+        <div style="padding-top:10px">
+          <div class="fl">Confidence (1–5)</div>
+          <div class="ratingrow" id="ev-rating">
+            <button class="rbtn" onclick="rate(this,'ev-rating')">1</button>
+            <button class="rbtn" onclick="rate(this,'ev-rating')">2</button>
+            <button class="rbtn" onclick="rate(this,'ev-rating')">3</button>
+            <button class="rbtn" onclick="rate(this,'ev-rating')">4</button>
+            <button class="rbtn" onclick="rate(this,'ev-rating')">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="submitarea">
+        <button class="btnp" onclick="submit('event')">Submit to Dynamics 365</button>
+        <button class="btno" onclick="saveDraft('ev-form')">Save draft &amp; exit</button>
+      </div>
+      <div class="bsafe"></div>
+      <div class="toast" id="toast-ev-form">Draft saved locally</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       OCR SCANNER
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="ocr" style="background:#080808">
+    <div class="sb" style="background:#080808">
+      <div class="sb-t" style="color:#fff">9:41</div>
+      <div class="sb-i" style="color:#fff">●●● ⊙ ⚡</div>
+    </div>
+    <div style="background:rgba(0,0,0,.45);padding:10px 14px;display:flex;align-items:center">
+      <button class="nav-back" onclick="back()">‹ Back</button>
+      <div style="flex:1;text-align:center;font-size:15px;font-weight:700;color:#fff">Scan</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="ocrscreen">
+      <div class="ocrtabs">
+        <button class="ocrtab on" id="tab-badge" onclick="switchTab('badge')">Badge</button>
+        <button class="ocrtab" id="tab-card" onclick="switchTab('card')">Business card</button>
+      </div>
+      <div class="vf">
+        <div class="vc vtl"></div><div class="vc vtr"></div>
+        <div class="vc vbl"></div><div class="vc vbr"></div>
+        <div class="sline"></div>
+        <div class="vfhint" id="vf-hint">Point at badge</div>
+      </div>
+      <div class="ocrlbl" id="ocr-lbl">Hold steady — auto-scanning</div>
+      <div class="shutter" onclick="doScan()">📷</div>
+      <div class="shutter-hint">Tap to scan</div>
+      <div class="ocrproc" id="ocrproc" style="border-radius:42px">
+        <div class="spin"></div>
+        <div class="proctext">Extracting fields…</div>
+        <div class="procsub">Reading OCR output</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       MEETING FORM
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="meeting">
+    <div class="sb" style="background:#2E75B6"><div class="sb-t" style="color:#fff">9:41</div><div class="sb-i" style="color:#fff">●●● ⊙ ⚡</div></div>
+    <div class="nav nb2">
+      <button class="nav-back" onclick="back()">‹ Back</button>
+      <div class="nav-title">Meeting Mode</div>
+      <button class="nav-action" onclick="saveDraft('meeting')" style="font-size:13px;padding:6px 0">Draft</button>
+    </div>
+    <div class="scroll">
+      <div class="scanwrap">
+        <button class="scanbtn blue2" onclick="openOcr('meeting')">
+          <span style="font-size:18px">⬜</span> Scan business card (optional)
+        </button>
+      </div>
+
+      <div class="slabel">Contact details <span class="ocrtag" id="mt-ocr-tag" style="display:none">OCR filled</span></div>
+      <div class="card">
+        <div class="frow">
+          <div class="fg"><div class="fl"><span class="req"></span>First</div><input class="fi" id="mt-first" placeholder="First name"></div>
+          <div class="fg"><div class="fl"><span class="req"></span>Last</div><input class="fi" id="mt-last" placeholder="Last name"></div>
+        </div>
+        <div class="fg"><div class="fl"><span class="req"></span>Job title</div><input class="fi" id="mt-jobtitle" placeholder="e.g. Head of Payments"></div>
+        <div class="fg"><div class="fl"><span class="req"></span>Company</div><input class="fi" id="mt-company" placeholder="Company name"></div>
+        <div class="fg"><div class="fl"><span class="req"></span>Email</div><input class="fi" id="mt-email" type="email" placeholder="name@company.com"></div>
+        <div class="fg" style="margin-bottom:0"><div class="fl"><span class="req"></span>Phone</div><input class="fi" id="mt-phone" type="tel" placeholder="+44 20 0000 0000"></div>
+      </div>
+
+      <div class="slabel">Attribution</div>
+      <div class="card">
+        <div class="fg"><div class="fl"><span class="req"></span>Lead source</div>
+          <select class="fs"><option value="">Select source…</option><option>Outbound call</option><option>Field visit</option><option>Referral</option><option>LinkedIn</option><option>Inbound enquiry</option><option>Other</option></select>
+        </div>
+        <div class="fg" style="margin-bottom:0"><div class="fl">Meeting / opportunity name</div><input class="fi" placeholder="Optional — for tracking"></div>
+      </div>
+
+      <div class="slabel">Qualification <span class="ctier">Tier 2</span></div>
+      <div class="card">
+        <div class="fg"><div class="fl"><span class="req"></span>Industry</div>
+          <select class="fs"><option value="">Select…</option><option>Financial services</option><option>Retail</option><option>Healthcare</option><option>Government</option><option>Other</option></select>
+        </div>
+        <div class="fg"><div class="fl"><span class="req"></span>Company size</div>
+          <select class="fs"><option value="">Select…</option><option>1–10</option><option>11–100</option><option>101–1,000</option><option>1,001–5,000</option><option>5,000+</option></select>
+        </div>
+        <div class="fg"><div class="fl"><span class="req"></span>Annual payment volume</div>
+          <select class="fs"><option value="">Select range…</option><option>Less than £1M</option><option>£1M – £10M</option><option>£10M – £50M</option><option>£50M – £250M</option><option>More than £250M</option></select>
+        </div>
+        <div class="fg"><div class="fl">Current payment provider</div><input class="fi" placeholder="e.g. Stripe, Adyen, Worldpay"></div>
+        <div class="fg">
+          <div class="fl"><span class="req"></span>Products of interest</div>
+          <div class="chips">
+            <button class="chip" onclick="chip(this)">Payments</button>
+            <button class="chip" onclick="chip(this)">Financial services</button>
+            <button class="chip" onclick="chip(this)">Fiscalisation</button>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">Pain points</div>
+          <div class="chips">
+            <button class="chip" onclick="chip(this)">High fees</button>
+            <button class="chip" onclick="chip(this)">Poor reliability</button>
+            <button class="chip" onclick="chip(this)">Missing features</button>
+            <button class="chip" onclick="chip(this)">Compliance</button>
+            <button class="chip" onclick="chip(this)">Integration issues</button>
+            <button class="chip" onclick="chip(this)">International growth</button>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl"><span class="req"></span>Partner type</div>
+          <div class="chips" id="mt-partner">
+            <button class="chip" onclick="partnerChip(this,'mt-partner')">Merchant</button>
+            <button class="chip" onclick="partnerChip(this,'mt-partner')">ISV</button>
+            <button class="chip" onclick="partnerChip(this,'mt-partner')">Reseller</button>
+            <button class="chip" onclick="partnerChip(this,'mt-partner')">IHV</button>
+            <button class="chip" onclick="partnerChip(this,'mt-partner')">Other</button>
+          </div>
+        </div>
+        <div class="fg"><div class="fl"><span class="req"></span>Buying timeline</div>
+          <select class="fs"><option value="">Select…</option><option>Immediate (&lt;3 months)</option><option>Short-term (3–6 months)</option><option>Mid-term (6–12 months)</option><option>Exploring only</option></select>
+        </div>
+        <div class="fg" style="margin-bottom:0"><div class="fl"><span class="req"></span>Decision-maker status</div>
+          <select class="fs"><option value="">Select…</option><option>Economic buyer</option><option>Technical evaluator</option><option>Champion</option><option>Influencer</option><option>Unknown</option></select>
+        </div>
+      </div>
+
+      <!-- Tier 3 collapsible -->
+      <div class="coll">
+        <div class="chead" id="t3h" onclick="collToggle('t3h','t3b')">
+          Deep qualification <span class="ctier">Tier 3</span>
+          <span class="carrow">▼</span>
+        </div>
+        <div class="cbody" id="t3b">
+          <div class="fg"><div class="fl">Transactions / month</div>
+            <select class="fs"><option value="">Select…</option><option>Less than 10K</option><option>10K – 100K</option><option>100K – 1M</option><option>More than 1M</option></select>
+          </div>
+          <div class="fg"><div class="fl">Avg. transaction value</div>
+            <select class="fs"><option value="">Select…</option><option>Less than £10</option><option>£10 – £100</option><option>£100 – £1,000</option><option>More than £1,000</option></select>
+          </div>
+          <div class="fg"><div class="fl">Contract end date</div><input class="fi" type="date"></div>
+          <div class="fg">
+            <div class="fl">Competitors evaluated</div>
+            <div class="chips">
+              <button class="chip" onclick="chip(this)">Stripe</button>
+              <button class="chip" onclick="chip(this)">Adyen</button>
+              <button class="chip" onclick="chip(this)">Worldpay</button>
+              <button class="chip" onclick="chip(this)">Square</button>
+              <button class="chip" onclick="chip(this)">Checkout.com</button>
+            </div>
+          </div>
+          <div class="fg">
+            <div class="fl">Regulatory requirements</div>
+            <div class="chips">
+              <button class="chip" onclick="chip(this)">PCI DSS L1</button>
+              <button class="chip" onclick="chip(this)">PSD2 / SCA</button>
+              <button class="chip" onclick="chip(this)">DORA</button>
+            </div>
+          </div>
+          <div class="trow">
+            <div><div class="tlabel">Follow-up agreed</div><div class="tsub">Was a follow-up explicitly arranged?</div></div>
+            <div class="tog" id="mt-fu-tog" onclick="tog(this,true)"></div>
+          </div>
+          <div id="fu-date-row" style="display:none;padding-top:10px">
+            <div class="fl">Follow-up date</div>
+            <input class="fi" type="date" style="margin-bottom:4px">
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes collapsible -->
+      <div class="coll">
+        <div class="chead open" id="notesh" onclick="collToggle('notesh','notesb')">
+          Notes &amp; context
+          <span class="carrow" style="transform:rotate(180deg)">▼</span>
+        </div>
+        <div class="cbody open" id="notesb">
+          <div class="fg"><div class="fl">Conversation summary</div><textarea class="fta" id="mt-notes" placeholder="What was discussed? What problem are they trying to solve?"></textarea></div>
+          <div class="trow">
+            <div><div class="tlabel">Hot lead 🔥</div><div class="tsub">Flag for same-day AE follow-up</div></div>
+            <div class="tog" id="mt-hot-tog" onclick="tog(this)"></div>
+          </div>
+          <div style="padding-top:10px">
+            <div class="fl">Confidence (1–5)</div>
+            <div class="ratingrow" id="mt-rating">
+              <button class="rbtn" onclick="rate(this,'mt-rating')">1</button>
+              <button class="rbtn" onclick="rate(this,'mt-rating')">2</button>
+              <button class="rbtn" onclick="rate(this,'mt-rating')">3</button>
+              <button class="rbtn" onclick="rate(this,'mt-rating')">4</button>
+              <button class="rbtn" onclick="rate(this,'mt-rating')">5</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="submitarea">
+        <button class="btnp b2" onclick="submit('meeting')">Submit to Dynamics 365</button>
+        <button class="btno" onclick="saveDraft('meeting')">Save draft &amp; exit</button>
+      </div>
+      <div class="bsafe"></div>
+      <div class="toast" id="toast-meeting">Draft saved locally</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SUCCESS
+  ══════════════════════════════════════════════ -->
+  <div class="S hide" id="success" style="background:#fff">
+    <div class="sb bk" style="background:#fff"><div class="sb-t">9:41</div><div class="sb-i">●●● ⊙ ⚡</div></div>
+    <div class="succinner">
+      <div class="succcircle">✓</div>
+      <div class="succtitle">Lead captured!</div>
+      <div class="succsub" id="succ-sub">Successfully submitted to<br>Dynamics 365 · Record created</div>
+      <div id="succ-hot" style="display:none;margin-bottom:14px">
+        <div class="hotbadge">🔥 Hot lead — AE notified</div>
+      </div>
+      <div class="dynid">
+        <span>🔗</span><span id="succ-dynid">LEAD-2026-00847</span>
+      </div>
+      <div class="statgrid">
+        <div class="statcard"><div class="statval" id="succ-count">5</div><div class="statlbl">Leads today</div></div>
+        <div class="statcard"><div class="statval">100%</div><div class="statlbl">Synced</div></div>
+      </div>
+      <button class="btnp" style="width:100%;margin-bottom:8px" onclick="captureAnother()">Capture another lead</button>
+      <button class="btno" style="width:100%" onclick="jump('home')">Back to home</button>
+    </div>
+    <div class="bsafe"></div>
+  </div>
+
+  </div><!-- /pscreen -->
+</div><!-- /pframe -->
+</div><!-- /pwrap -->
+
+<script>
+var nav = ['home'];
+var ocrSource = 'event';
+var activeEvent = {name:'Money20/20 Europe 2026', detail:'RAI Amsterdam · 25–27 May 2026', utm:'M2020-EU-2026'};
+var leadCount = 3;
+var lastSubmitMode = 'event';
+
+function setScreen(id) {
+  document.querySelectorAll('.S').forEach(function(s){ s.classList.add('hide'); });
+  document.getElementById(id).classList.remove('hide');
+}
+
+function goto(id) {
+  var prev = nav[nav.length - 1];
+  var prevEl = document.getElementById(prev);
+  prevEl.classList.add('out');
+  setTimeout(function(){ prevEl.classList.remove('out'); prevEl.classList.add('hide'); }, 240);
+  var nextEl = document.getElementById(id);
+  nextEl.classList.remove('hide');
+  nextEl.classList.add('in');
+  setTimeout(function(){ nextEl.classList.remove('in'); }, 280);
+  nav.push(id);
+  syncPills(id);
+}
+
+function back() {
+  if (nav.length <= 1) return;
+  var cur = nav.pop();
+  document.getElementById(cur).classList.add('hide');
+  var prev = nav[nav.length - 1];
+  var el = document.getElementById(prev);
+  el.classList.remove('hide');
+  el.classList.add('back-in');
+  setTimeout(function(){ el.classList.remove('back-in'); }, 280);
+  syncPills(prev);
+}
+
+function jump(id) {
+  nav = ['home'];
+  setScreen(id);
+  if (id !== 'home') nav.push(id);
+  syncPills(id);
+}
+
+function syncPills(id) {
+  document.querySelectorAll('.dpill').forEach(function(p,i){ p.classList.remove('on'); });
+  var pills = document.querySelectorAll('.dpill');
+  if (id === 'home' || id.startsWith('lead-detail')) pills[0].classList.add('on');
+  else if (id === 'ev-picker' || id === 'ev-form' || id === 'ocr') pills[1].classList.add('on');
+  else if (id === 'meeting') pills[2].classList.add('on');
+  else if (id === 'success') {
+    if (lastSubmitMode === 'event') pills[1].classList.add('on');
+    else pills[2].classList.add('on');
+  }
+}
+
+function pickEvent(name, venue, dates, utm) {
+  activeEvent = {name:name, detail:venue+' · '+dates, utm:utm};
+  document.getElementById('ev-ctx-name').textContent = name;
+  document.getElementById('ev-ctx-detail').textContent = activeEvent.detail;
+  document.getElementById('ev-utm-label').textContent = 'utm_campaign=' + utm;
+  document.getElementById('ev-ctx-count').textContent = leadCount + ' leads';
+  goto('ev-form');
+}
+
+function openOcr(source) {
+  ocrSource = source;
+  goto('ocr');
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-badge').classList.toggle('on', tab === 'badge');
+  document.getElementById('tab-card').classList.toggle('on', tab === 'card');
+  document.getElementById('vf-hint').textContent = tab === 'badge' ? 'Point at badge' : 'Align card in frame';
+  document.getElementById('ocr-lbl').textContent = tab === 'badge' ? 'Hold steady — auto-scanning' : 'Align card within the frame';
+}
+
+function doScan() {
+  var proc = document.getElementById('ocrproc');
+  proc.classList.add('show');
+  setTimeout(function() {
+    proc.classList.remove('show');
+    applyOcrFields(ocrSource);
+    back();
+    setTimeout(function() {
+      var tag = document.getElementById(ocrSource === 'event' ? 'ev-ocr-tag' : 'mt-ocr-tag');
+      if (tag) tag.style.display = 'inline-flex';
+    }, 200);
+  }, 1800);
+}
+
+function applyOcrFields(mode) {
+  var p = mode === 'event' ? 'ev' : 'mt';
+  var data = {first:'Emma', last:'Johansson', jobtitle:'VP of Finance', company:'Nordic Retail Group AB', email:'emma.johansson@nordicretail.se', phone:'+46 70 234 5678'};
+  Object.keys(data).forEach(function(k) {
+    var el = document.getElementById(p + '-' + k);
+    if (el) { el.value = data[k]; el.classList.add('ocr'); }
+  });
+}
+
+function chip(el) { el.classList.toggle('on'); }
+
+function partnerChip(el, groupId) {
+  document.getElementById(groupId).querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+}
+
+function tog(el, isFollowup) {
+  el.classList.toggle('on');
+  if (isFollowup) {
+    var row = document.getElementById('fu-date-row');
+    if (row) row.style.display = el.classList.contains('on') ? 'block' : 'none';
+  }
+}
+
+function rate(el, group) {
+  document.getElementById(group).querySelectorAll('.rbtn').forEach(function(b){ b.classList.remove('on'); });
+  el.classList.add('on');
+}
+
+function collToggle(headId, bodyId) {
+  var head = document.getElementById(headId);
+  var body = document.getElementById(bodyId);
+  var open = body.classList.toggle('open');
+  head.classList.toggle('open', open);
+  var arrow = head.querySelector('.carrow');
+  if (arrow) arrow.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function saveDraft(formId) {
+  var toastId = 'toast-' + formId;
+  var toast = document.getElementById(toastId);
+  if (!toast) return;
+  toast.style.display = 'block';
+  setTimeout(function() {
+    toast.style.display = 'none';
+    jump('home');
+  }, 1400);
+}
+
+function submit(mode) {
+  lastSubmitMode = mode;
+  leadCount++;
+  var isHot = document.getElementById(mode === 'event' ? 'ev-hot-tog' : 'mt-hot-tog');
+  var hot = isHot && isHot.classList.contains('on');
+  document.getElementById('succ-dynid').textContent = 'LEAD-2026-00' + (840 + leadCount);
+  document.getElementById('succ-count').textContent = leadCount;
+  document.getElementById('succ-hot').style.display = hot ? 'block' : 'none';
+  document.getElementById('home-count').textContent = leadCount;
+  if (mode === 'event') {
+    document.getElementById('succ-sub').innerHTML = 'Submitted with auto UTM tagging<br><strong>' + activeEvent.utm + '</strong> · Synced to Dynamics 365';
+    document.getElementById('ev-ctx-count').textContent = leadCount + ' leads';
+  } else {
+    document.getElementById('succ-sub').innerHTML = 'Successfully submitted to<br>Dynamics 365 · Record created';
+  }
+  resetForm(mode);
+  goto('success');
+}
+
+function resetForm(mode) {
+  var p = mode === 'event' ? 'ev' : 'mt';
+  ['first','last','jobtitle','company','email','phone','notes'].forEach(function(f) {
+    var el = document.getElementById(p + '-' + f);
+    if (el) { el.value = ''; el.classList.remove('ocr'); }
+  });
+  document.querySelectorAll('.chip.on').forEach(function(c){ c.classList.remove('on'); });
+  var pg = document.getElementById(p + '-partner');
+  if (pg) pg.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+  document.querySelectorAll('.rbtn.on').forEach(function(b){ b.classList.remove('on'); });
+  document.querySelectorAll('.tog.on').forEach(function(t){ t.classList.remove('on'); });
+  var tag = document.getElementById(p + '-ocr-tag');
+  if (tag) tag.style.display = 'none';
+  var fdr = document.getElementById('fu-date-row');
+  if (fdr) fdr.style.display = 'none';
+}
+
+function captureAnother() {
+  if (lastSubmitMode === 'event') goto('ev-form');
+  else goto('meeting');
+}
+</script>
+</body>
+</html>
