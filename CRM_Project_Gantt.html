@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Assessment – Project Gantt</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #F0F4F8; color: #2d3748; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
+
+  header { margin-bottom: 28px; }
+  header h1 { font-size: 26px; font-weight: 700; color: #1F4E79; }
+  header p  { font-size: 14px; color: #718096; margin-top: 4px; }
+
+  .legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4a5568; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+  .gantt-wrap { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden; }
+
+  /* HEADER */
+  .gantt-header { display: flex; background: #1F4E79; }
+  .gantt-header .label-col { min-width: 220px; padding: 10px 16px; font-size: 12px; font-weight: 700; color: #fff; }
+  .gantt-header .weeks { flex: 1; display: flex; }
+  .gantt-header .week-label { flex: 1; text-align: center; font-size: 11px; color: #BEE3F8; padding: 10px 2px;
+    border-left: 1px solid rgba(255,255,255,.15); line-height: 1.3; }
+
+  /* MONTH SUBHEADER */
+  .month-row { display: flex; background: #2E75B6; }
+  .month-row .label-col { min-width: 220px; }
+  .month-row .month-block { text-align: center; font-size: 11px; font-weight: 700; color: #fff;
+    padding: 5px 0; border-left: 1px solid rgba(255,255,255,.2); }
+
+  /* PHASE GROUP */
+  .phase-group { border-top: 2px solid #E8F4FD; }
+  .phase-group-header { background: #E8F4FD; padding: 7px 16px; font-size: 12px; font-weight: 700;
+    color: #1F4E79; text-transform: uppercase; letter-spacing: .6px; }
+
+  /* TASK ROW */
+  .task-row { display: flex; align-items: center; min-height: 40px; border-top: 1px solid #EDF2F7; }
+  .task-row:hover { background: #FAFCFF; }
+  .task-row.athens-row { background: #FFF9E6; }
+  .task-row.athens-row:hover { background: #FFF3CC; }
+
+  .task-row .task-label { min-width: 220px; padding: 8px 16px 8px 24px; font-size: 13px; color: #2d3748; line-height: 1.3; }
+  .task-row .task-label .sub { font-size: 11px; color: #718096; margin-top: 2px; }
+  .task-row .task-label .athens-tag { display: inline-block; font-size: 10px; font-weight: 700;
+    color: #B7791F; background: #FEFCBF; border: 1px solid #F6E05E; border-radius: 10px;
+    padding: 1px 7px; margin-top: 3px; }
+
+  .task-row .bars { flex: 1; position: relative; height: 40px; display: flex; align-items: center; }
+  .task-row .bars .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #EDF2F7; }
+
+  .today-line  { position: absolute; top: 0; bottom: 0; width: 2px; background: #F6AD55; z-index: 5; }
+  .today-label { position: absolute; top: 2px; font-size: 9px; font-weight: 700; color: #F6AD55;
+    background: #fff; padding: 1px 3px; border-radius: 3px; z-index: 6; transform: translateX(-50%); white-space: nowrap; }
+
+  .bar { position: absolute; height: 20px; border-radius: 4px; display: flex; align-items: center;
+    padding: 0 8px; font-size: 11px; font-weight: 600; color: #fff; overflow: hidden;
+    white-space: nowrap; z-index: 3; transition: box-shadow 0.15s ease; cursor: default; }
+
+  .bar:hover {
+    width: max-content !important;
+    overflow: visible;
+    z-index: 50;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+    border-radius: 4px;
+  }
+
+  /* Athens travel bar */
+  .bar.c-athens {
+    background: linear-gradient(90deg, #D69E2E 0%, #F6AD55 100%);
+    border: 2px solid #B7791F;
+    color: #fff;
+    height: 22px;
+    box-shadow: 0 2px 8px rgba(214,158,46,.4);
+  }
+
+  /* colours */
+  .c-blue   { background: #2E75B6; }
+  .c-teal   { background: #2B9C8E; }
+  .c-green  { background: #38A169; }
+  .c-purple { background: #805AD5; }
+  .c-orange { background: #DD6B20; }
+
+  footer { margin-top: 24px; font-size: 12px; color: #A0AEC0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>CRM Under-Utilisation Assessment — Project Timeline</h1>
+    <p>Dynamics CRM Discovery, Validation &amp; Prioritisation  •  May – July 2026</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#2E75B6"></div> Discovery</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2B9C8E"></div> Validation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#38A169"></div> Prioritisation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#805AD5"></div> CRM Review</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#DD6B20"></div> Roadmap</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#D69E2E; width:4px; height:14px; border-radius:2px; border:1px solid #B7791F;"></div> Athens ✈</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F6AD55; width:4px; height:14px; border-radius:2px;"></div> Today</div>
+  </div>
+
+  <div class="gantt-wrap" id="gantt"></div>
+
+  <footer>Generated May 2026 &nbsp;|&nbsp; CRM Assessment Programme &nbsp;|&nbsp; Internal Use Only</footer>
+</div>
+
+<script>
+const START     = new Date('2026-05-11'); // Monday
+const NUM_WEEKS = 10;
+const TODAY     = new Date('2026-05-13');
+
+// Days from START:  day 0=May11, 7=May18, 14=May25, 21=Jun1, 28=Jun8, 35=Jun15, 42=Jun22, 49=Jun29, 56=Jul6
+const GROUPS = [
+  {
+    name: "Phase 1 · Discovery",
+    tasks: [
+      { label: "Sales Interviews",          sub: "Field Sales, AMs, ISV Managers",      start: 7,  dur: 5,  color: "c-blue" },
+      { label: "Wider User Interviews",     sub: "Team Leads, Country & Regional Mgrs", start: 7,  dur: 5,  color: "c-blue" },
+      { label: "Summarise Interview Input", sub: "Theme grouping & findings (tightened)",start: 10, dur: 3,  color: "c-blue" },
+    ]
+  },
+  {
+    name: "Phase 2 · Validation",
+    tasks: [
+      { label: "Questionnaire Creation",    sub: "Build targeted per-group surveys",    start: 14, dur: 5,  color: "c-teal" },
+      { label: "Survey Distribution",       sub: "Send to all user groups",             start: 21, dur: 1,  color: "c-teal" },
+      { label: "Survey Live",               sub: "1-week response window",              start: 21, dur: 7,  color: "c-teal" },
+      { label: "Survey Analysis",           sub: "Quantify frequency & impact",         start: 28, dur: 5,  color: "c-teal" },
+    ]
+  },
+  {
+    name: "Phase 3 · Prioritisation",
+    tasks: [
+      { label: "Score & Rank Issues",       sub: "Need × impact × adoption value",     start: 33, dur: 5,  color: "c-green" },
+      { label: "Pain Point Register",       sub: "Consolidated backlog draft",          start: 35, dur: 4,  color: "c-green" },
+      { label: "Stakeholder Alignment",     sub: "Review priorities with leadership",   start: 39, dur: 3,  color: "c-green" },
+    ]
+  },
+  {
+    name: "Phase 4 · CRM Team Review  ✈ Athens",
+    tasks: [
+      { label: "✈ Athens",                  sub: "In-person CRM team alignment",        start: 42, dur: 5,  color: "c-athens", athens: true },
+      { label: "Effort & Feasibility",      sub: "System vs process vs training",       start: 42, dur: 5,  color: "c-purple" },
+      { label: "Classify Items",            sub: "Quick win / medium / large effort",   start: 45, dur: 4,  color: "c-purple" },
+    ]
+  },
+  {
+    name: "Phase 5 · Roadmap & Execution",
+    tasks: [
+      { label: "Define Quick Wins",         sub: "Low-effort, immediate actions",       start: 49, dur: 5,  color: "c-orange" },
+      { label: "Build CRM Roadmap",         sub: "Short / medium / long-term plan",     start: 51, dur: 7,  color: "c-orange" },
+      { label: "Assign Owners & Metrics",   sub: "Accountability & success KPIs",       start: 56, dur: 5,  color: "c-orange" },
+    ]
+  },
+];
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+const gantt = document.getElementById('gantt');
+const totalDays = NUM_WEEKS * 7;
+
+const weeks = [];
+for (let w = 0; w < NUM_WEEKS; w++) {
+  const d = new Date(START);
+  d.setDate(d.getDate() + w * 7);
+  weeks.push(d);
+}
+
+const monthSpans = [];
+let cur = null;
+weeks.forEach(d => {
+  const m = d.toLocaleString('en-GB', { month: 'short' }) + ' ' + d.getFullYear();
+  if (!cur || cur.label !== m) { cur = { label: m, count: 0 }; monthSpans.push(cur); }
+  cur.count++;
+});
+
+// Header
+const hdr = document.createElement('div');
+hdr.className = 'gantt-header';
+hdr.innerHTML = `<div class="label-col">Activity</div><div class="weeks"></div>`;
+const weeksEl = hdr.querySelector('.weeks');
+weeks.forEach(d => {
+  const s = document.createElement('div');
+  s.className = 'week-label';
+  s.innerHTML = `${d.getDate()}<br>${d.toLocaleString('en-GB',{month:'short'})}`;
+  weeksEl.appendChild(s);
+});
+gantt.appendChild(hdr);
+
+// Month row
+const mrow = document.createElement('div');
+mrow.className = 'month-row';
+mrow.innerHTML = `<div class="label-col"></div>`;
+monthSpans.forEach(m => {
+  const s = document.createElement('div');
+  s.className = 'month-block';
+  s.style.flex = m.count;
+  s.textContent = m.label;
+  mrow.appendChild(s);
+});
+gantt.appendChild(mrow);
+
+const todayDays = Math.round((TODAY - START) / 86400000);
+const todayPct  = (todayDays / totalDays) * 100;
+function pct(d) { return (d / totalDays * 100).toFixed(3) + '%'; }
+
+GROUPS.forEach(group => {
+  const groupEl = document.createElement('div');
+  groupEl.className = 'phase-group';
+
+  const gh = document.createElement('div');
+  gh.className = 'phase-group-header';
+  gh.textContent = group.name;
+  groupEl.appendChild(gh);
+
+  group.tasks.forEach(task => {
+    const row = document.createElement('div');
+    row.className = 'task-row' + (task.athens ? ' athens-row' : '');
+
+    const lbl = document.createElement('div');
+    lbl.className = 'task-label';
+    lbl.innerHTML = task.label
+      + (task.sub ? `<div class="sub">${task.sub}</div>` : '')
+      + (task.athens ? `<div class="athens-tag">✈ Athens · 22–26 Jun</div>` : '');
+    row.appendChild(lbl);
+
+    const bars = document.createElement('div');
+    bars.className = 'bars';
+
+    weeks.forEach((_, i) => {
+      const gl = document.createElement('div');
+      gl.className = 'grid-line';
+      gl.style.left = pct(i * 7);
+      bars.appendChild(gl);
+    });
+
+    if (todayDays >= 0 && todayDays <= totalDays) {
+      const tl = document.createElement('div'); tl.className = 'today-line'; tl.style.left = todayPct + '%';
+      const tlab = document.createElement('div'); tlab.className = 'today-label'; tlab.style.left = todayPct + '%'; tlab.textContent = 'Today';
+      bars.appendChild(tl); bars.appendChild(tlab);
+    }
+
+    const bar = document.createElement('div');
+    bar.className = `bar ${task.color}`;
+    bar.style.left  = pct(task.start);
+    bar.style.width = pct(task.dur);
+    bar.textContent = task.athens ? '✈ Athens' : task.label;
+    bars.appendChild(bar);
+
+    row.appendChild(bars);
+    groupEl.appendChild(row);
+  });
+
+  gantt.appendChild(groupEl);
+});
+
+function formatDate(days) {
+  const d = new Date(START);
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+</script>
+</body>
+</html>
