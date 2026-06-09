@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IC++ Margin Recovery Calculator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1a56db;
+  --primary-dark: #1e429f;
+  --primary-light: #eff6ff;
+  --success: #057a55;
+  --success-bg: #f3faf7;
+  --success-border: #bcf0da;
+  --warning-bg: #fffbeb;
+  --warning-border: #fcd34d;
+  --warning-text: #92400e;
+  --border: #e5e7eb;
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --label: #374151;
+  --amber: #d97706;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: var(--primary-dark);
+  color: white;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  width: 32px; height: 32px;
+  background: white;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800;
+  color: var(--primary-dark);
+  flex-shrink: 0;
+}
+
+header h1 { font-size: 17px; font-weight: 600; }
+header p  { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+main {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+/* ── Grid helpers ── */
+.g2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+
+/* ── Fields ── */
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+.field label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--label);
+}
+
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrap input {
+  width: 100%;
+  padding: 8px 38px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 14px;
+  color: var(--text);
+  background: white;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  -moz-appearance: textfield;
+}
+.input-wrap input::-webkit-inner-spin-button,
+.input-wrap input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.input-wrap input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.12);
+}
+
+.input-wrap input[readonly] {
+  background: #f9fafb;
+  color: var(--muted);
+  cursor: default;
+}
+
+.unit {
+  position: absolute;
+  right: 9px;
+  font-size: 10.5px;
+  color: var(--muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Tier banner ── */
+.tier-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  border: 1px solid #bfdbfe;
+  margin-bottom: 14px;
+}
+
+.tier-pill {
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.tier-desc { font-size: 12.5px; color: #1e40af; }
+
+/* ── Stat boxes ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-box {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fafafa;
+}
+
+.stat-lbl { font-size: 10.5px; color: var(--muted); margin-bottom: 3px; }
+.stat-val { font-size: 19px; font-weight: 700; color: var(--text); line-height: 1.1; }
+.stat-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+.green  { color: var(--success) !important; }
+.amber  { color: var(--amber) !important; }
+
+/* ── Lever table ── */
+.lever-table { width: 100%; border-collapse: collapse; }
+
+.lever-table thead th {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding: 0 10px 8px;
+  border-bottom: 1.5px solid var(--border);
+  text-align: left;
+}
+.lever-table thead th:not(:first-child) { text-align: right; }
+.lever-table thead th.center { text-align: center; }
+
+.lever-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+}
+.lever-table tbody tr:last-child { border-bottom: none; }
+
+.lever-table td { padding: 11px 10px; vertical-align: middle; }
+
+.lever-name  { font-size: 13px; font-weight: 500; }
+.lever-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.lever-input { min-width: 120px; }
+.lever-input .input-wrap input { font-size: 13px; }
+
+.lever-rec  { text-align: right; font-size: 13.5px; font-weight: 600; color: var(--success); min-width: 90px; }
+.lever-pct  { text-align: right; font-size: 11px; color: var(--muted); min-width: 70px; }
+
+.chip {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.chip-ok   { background: #d1fae5; color: #065f46; }
+.chip-warn { background: #fef3c7; color: #92400e; }
+.chip-na   { background: #f3f4f6; color: var(--muted); }
+
+/* ── Buttons ── */
+.btn {
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.13s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-outline {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  padding: 5px 10px;
+}
+.btn-outline:hover { background: #dbeafe; }
+
+/* ── Progress ── */
+.progress-wrap { margin: 14px 0 10px; }
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.progress-bg {
+  height: 9px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease, background 0.3s;
+  background: var(--primary);
+}
+
+/* ── Status banner ── */
+.status {
+  padding: 11px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.status-ok   { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.status-warn { background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border); }
+
+/* ── Summary stat grid ── */
+.sum-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+/* ── Advanced toggle ── */
+.adv-toggle {
+  background: none; border: none; cursor: pointer;
+  color: var(--primary); font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 14px; padding: 0;
+}
+.adv-body { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* ── Override target field ── */
+.override-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.override-row .field { max-width: 200px; }
+
+/* ── Select ── */
+.field select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 13.5px;
+  color: var(--text);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.12s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+}
+.field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.12); }
+
+/* ── Zone notice ── */
+.zone-notice {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.zone-notice.euro { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.zone-notice.noneuro { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+
+/* ── Offer summary table ── */
+.offer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.offer-section { }
+.offer-section-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.offer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #f3f4f6;
+  gap: 8px;
+}
+.offer-row:last-child { border-bottom: none; }
+.offer-key {
+  font-size: 12.5px;
+  color: var(--label);
+  flex-shrink: 0;
+}
+.offer-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+.offer-sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 1px;
+}
+.offer-na { color: var(--muted); font-weight: 400; font-style: italic; }
+
+/* ── Toggle switch ── */
+.toggle-wrap { display: flex; align-items: center; gap: 12px; }
+.toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: #d1d5db; border-radius: 22px; cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-track::before {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; left: 3px; top: 3px;
+  background: white; border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked + .toggle-track { background: var(--primary); }
+.toggle-switch input:checked + .toggle-track::before { transform: translateX(18px); }
+
+/* ── Tab buttons ── */
+.tab-bar { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; width: fit-content; margin-bottom: 16px; }
+.tab-btn {
+  padding: 7px 18px; font-size: 12.5px; font-weight: 600;
+  background: white; border: none; cursor: pointer; color: var(--muted);
+  transition: background 0.12s, color 0.12s;
+}
+.tab-btn.active { background: var(--primary); color: white; }
+.tab-btn:hover:not(.active) { background: var(--bg); }
+
+/* ── ISV panel ── */
+.isv-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* ── Multiplier grid ── */
+.mult-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mult-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--border); background: white;
+  font-size: 12px; color: var(--label);
+  transition: border-color 0.12s, background 0.12s;
+  user-select: none;
+}
+.mult-item input[type=checkbox] { display: none; }
+.mult-item.positive.checked { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.mult-item.negative.checked { background: #fff7ed; border-color: #fdba74; color: #9a3412; }
+.mult-dot {
+  width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+.mult-item.positive .mult-dot { background: #d1fae5; color: #065f46; }
+.mult-item.positive.checked .mult-dot { background: #22c55e; color: white; }
+.mult-item.negative .mult-dot { background: #fee2e2; color: #991b1b; }
+.mult-item.negative.checked .mult-dot { background: #f97316; color: white; }
+.mult-label { flex: 1; line-height: 1.3; }
+.mult-adj { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.mult-item.positive .mult-adj { color: #16a34a; }
+.mult-item.negative .mult-adj { color: #dc2626; }
+
+/* ── ISV output row ── */
+.isv-results {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 10px;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.isv-rev-note {
+  padding: 10px 14px; border-radius: 7px;
+  background: #fff7ed; border: 1px solid #fed7aa;
+  font-size: 12px; color: #9a3412; margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  .g4, .g3 { grid-template-columns: 1fr 1fr; }
+  .stat-grid, .sum-grid { grid-template-columns: 1fr 1fr; }
+  .lever-table thead { display: none; }
+  .lever-table td { display: block; padding: 6px 0; }
+  .lever-table tr { padding: 10px 0; display: block; border-bottom: 1px solid var(--border); }
+  .mult-grid { grid-template-columns: 1fr; }
+  .isv-results { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">M</div>
+  <div>
+    <h1>IC++ Margin Recovery Calculator</h1>
+    <p>IC++ pricing → size recovery levers to hit the minimum NR margin target</p>
+  </div>
+</header>
+
+<main>
+
+<!-- ── DEAL SETUP ── -->
+<div class="card">
+  <div class="section-label">Deal Setup</div>
+  <div class="g4" style="margin-bottom:12px">
+    <div class="field">
+      <label>Monthly volume</label>
+      <div class="input-wrap">
+        <input type="number" id="volume" value="80000" min="0" step="1000">
+        <span class="unit">EUR</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Avg ticket value (ATV)</label>
+      <div class="input-wrap">
+        <input type="number" id="atv" value="40" min="1" step="1">
+        <span class="unit">EUR/trx</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Dom consumer IC++ margin</label>
+      <div class="input-wrap">
+        <input type="number" id="domMargin" value="0.20" min="0" max="3" step="0.01">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Dom consumer IC cost</label>
+      <div class="input-wrap">
+        <input type="number" id="domCost" value="0.35" min="0" max="3" step="0.01">
+        <span class="unit">%</span>
+      </div>
+    </div>
+  </div>
+  <div class="g4">
+    <div class="field">
+      <label>Processing fee</label>
+      <div class="input-wrap">
+        <input type="number" id="processingFee" value="0" min="0" step="0.01">
+        <span class="unit">EUR/trx</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Dom consumer share</label>
+      <div class="input-wrap">
+        <input type="number" id="domShare" value="80" min="0" max="100" step="1">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>EEA card share</label>
+      <div class="input-wrap">
+        <input type="number" id="eeaShare" value="10" min="0" max="100" step="1">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>International share</label>
+      <div class="input-wrap">
+        <input type="number" id="intlShare" readonly>
+        <span class="unit">% auto</span>
+      </div>
+    </div>
+  </div>
+  <div class="g4" style="margin-top:12px;align-items:end">
+    <div class="field">
+      <label>Merchant currency zone</label>
+      <select id="currencyZone">
+        <option value="euro">Euro zone (€)</option>
+        <option value="noneuro">Non-Euro — SE, NO, GB, etc.</option>
+      </select>
+    </div>
+    <div id="zoneNotice" class="zone-notice euro" style="margin-top:0;grid-column:span 3">
+      <span id="zoneNoticeText">DCC applies to international cards only</span>
+    </div>
+  </div>
+
+  <button class="adv-toggle" onclick="toggleAdv()">
+    <span id="advIcon">▶</span> Advanced assumptions
+  </button>
+  <div id="advBody" class="adv-body" style="display:none">
+    <div class="g4">
+      <div class="field">
+        <label>BoG annual interest rate</label>
+        <div class="input-wrap">
+          <input type="number" id="bogRate" value="2.0" min="0" step="0.1">
+          <span class="unit">% p.a.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Deposit annual yield</label>
+        <div class="input-wrap">
+          <input type="number" id="depositYield" value="2.0" min="0" step="0.1">
+          <span class="unit">% p.a.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>DCC profit per €1 volume</label>
+        <div class="input-wrap">
+          <input type="number" id="dccProfit" value="1.50" min="0" step="0.01">
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Working days / year</label>
+        <div class="input-wrap">
+          <input type="number" id="workingDays" value="254" min="200" max="280" step="1">
+          <span class="unit">days</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Issuing NR rate</label>
+        <div class="input-wrap">
+          <input type="number" id="issuingRate" value="1.20" min="0" step="0.01">
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Base T+n settlement</label>
+        <div class="input-wrap">
+          <input type="number" id="baseTn" value="1" min="0" max="60" step="1">
+          <span class="unit">days</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ISV / PARTNER ── -->
+<div class="card">
+  <div class="toggle-wrap">
+    <label class="toggle-switch">
+      <input type="checkbox" id="isvEnabled" onchange="toggleISV()">
+      <span class="toggle-track"></span>
+    </label>
+    <div>
+      <div style="font-size:14px;font-weight:600">ISV / Partner connected</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">Enable to model partner fee or revenue share impact</div>
+    </div>
+  </div>
+
+  <div id="isvPanel" class="isv-panel" style="display:none">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabOnTop" onclick="switchISVTab('ontop')">On Top Fee</button>
+      <button class="tab-btn" id="tabRevShare" onclick="switchISVTab('revshare')">Rev Share</button>
+    </div>
+
+    <!-- ON TOP FEE -->
+    <div id="panelOnTop">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">ISV charges a fee on top of Viva's rates. Goes directly to the ISV — Viva NR is unaffected.</div>
+      <div class="g4">
+        <div class="field">
+          <label>Fee type</label>
+          <select id="isvFeeType" onchange="render()">
+            <option value="pct">% of volume</option>
+            <option value="flat">Flat fee per transaction</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ISV fee (% of volume)</label>
+          <div class="input-wrap">
+            <input type="number" id="isvFeePct" value="0.15" min="0" max="5" step="0.01">
+            <span class="unit">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>ISV flat fee</label>
+          <div class="input-wrap">
+            <input type="number" id="isvFeeFlat" value="0" min="0" step="0.01">
+            <span class="unit">€/trx</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REV SHARE -->
+    <div id="panelRevShare" style="display:none">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Viva shares a % of NR with the ISV. The recovery levers must generate enough to preserve the target NR <em>after</em> the payout.</div>
+      <div class="g4" style="margin-bottom:16px">
+        <div class="field">
+          <label>Est. # of onboarded merchants</label>
+          <div class="input-wrap">
+            <input type="number" id="isvMerchants" value="200" min="1" step="1">
+            <span class="unit">merchants</span>
+          </div>
+        </div>
+        <div class="stat-box" style="display:flex;flex-direction:column;justify-content:center">
+          <div class="stat-lbl">Partner tier (auto)</div>
+          <div class="stat-val" id="isvTier" style="font-size:15px">—</div>
+          <div class="stat-sub" id="isvTierSub">based on annualised Net Amount</div>
+        </div>
+        <div class="stat-box" style="display:flex;flex-direction:column;justify-content:center">
+          <div class="stat-lbl">Base rev share</div>
+          <div class="stat-val amber" id="isvBaseRevShare" style="font-size:15px">—</div>
+          <div class="stat-sub" id="isvBaseRevSub">—</div>
+        </div>
+        <div class="stat-box" style="display:flex;flex-direction:column;justify-content:center">
+          <div class="stat-lbl">Effective rev share (final)</div>
+          <div class="stat-val" id="isvEffRevShare" style="font-size:15px">—</div>
+          <div class="stat-sub" id="isvEffRevSub">incl. adjustments + cap</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;margin-bottom:8px">Positive Adjustments (+5% each)</div>
+          <div class="mult-grid">
+            <label class="mult-item positive" id="mPos0wrap" onclick="toggleMult('mPos0',this)">
+              <input type="checkbox" id="mPos0">
+              <span class="mult-dot">+</span>
+              <span class="mult-label">Activation Rate ≥70%</span>
+              <span class="mult-adj">+5%</span>
+            </label>
+            <label class="mult-item positive" id="mPos1wrap" onclick="toggleMult('mPos1',this)">
+              <input type="checkbox" id="mPos1">
+              <span class="mult-dot">+</span>
+              <span class="mult-label">Retention Rate ≥85%</span>
+              <span class="mult-adj">+5%</span>
+            </label>
+            <label class="mult-item positive" id="mPos2wrap" onclick="toggleMult('mPos2',this)">
+              <input type="checkbox" id="mPos2">
+              <span class="mult-dot">+</span>
+              <span class="mult-label">Banking Product Adoption ≥20%</span>
+              <span class="mult-adj">+5%</span>
+            </label>
+            <label class="mult-item positive" id="mPos3wrap" onclick="toggleMult('mPos3',this)">
+              <input type="checkbox" id="mPos3">
+              <span class="mult-dot">+</span>
+              <span class="mult-label">Exclusivity</span>
+              <span class="mult-adj">+5%</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#dc2626;margin-bottom:8px">Negative Adjustments (−5% each)</div>
+          <div class="mult-grid">
+            <label class="mult-item negative" id="mNeg0wrap" onclick="toggleMult('mNeg0',this)">
+              <input type="checkbox" id="mNeg0">
+              <span class="mult-dot">−</span>
+              <span class="mult-label">High-Risk Merchant Mix ≥20%</span>
+              <span class="mult-adj">−5%</span>
+            </label>
+            <label class="mult-item negative" id="mNeg1wrap" onclick="toggleMult('mNeg1',this)">
+              <input type="checkbox" id="mNeg1">
+              <span class="mult-dot">−</span>
+              <span class="mult-label">Churn Rate ≥10% p.a.</span>
+              <span class="mult-adj">−5%</span>
+            </label>
+            <label class="mult-item negative" id="mNeg2wrap" onclick="toggleMult('mNeg2',this)">
+              <input type="checkbox" id="mNeg2">
+              <span class="mult-dot">−</span>
+              <span class="mult-label">Low Activation ≥40%</span>
+              <span class="mult-adj">−5%</span>
+            </label>
+            <label class="mult-item negative" id="mNeg3wrap" onclick="toggleMult('mNeg3',this)">
+              <input type="checkbox" id="mNeg3">
+              <span class="mult-dot">−</span>
+              <span class="mult-label">Inactive Portfolio ≥25%</span>
+              <span class="mult-adj">−5%</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISV OUTPUTS (both modes) -->
+    <div class="isv-results">
+      <div class="stat-box">
+        <div class="stat-lbl" id="isvOut0Lbl">ISV monthly earnings</div>
+        <div class="stat-val green" id="isvOut0">—</div>
+        <div class="stat-sub" id="isvOut0Sub">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl" id="isvOut1Lbl">Merchant effective rate</div>
+        <div class="stat-val" id="isvOut1">—</div>
+        <div class="stat-sub" id="isvOut1Sub">incl. ISV fee</div>
+      </div>
+      <div class="stat-box" id="isvOut2Box">
+        <div class="stat-lbl" id="isvOut2Lbl">Viva retains (after rev share)</div>
+        <div class="stat-val" id="isvOut2">—</div>
+        <div class="stat-sub" id="isvOut2Sub">—</div>
+      </div>
+      <div class="stat-box" id="isvOut3Box">
+        <div class="stat-lbl" id="isvOut3Lbl">Additional gap from rev share</div>
+        <div class="stat-val amber" id="isvOut3">—</div>
+        <div class="stat-sub">extra levers must cover</div>
+      </div>
+    </div>
+    <div id="isvRevNote" class="isv-rev-note" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── TARGET & GAP ── -->
+<div class="card">
+  <div class="section-label">Target &amp; Gap</div>
+
+  <div class="tier-banner">
+    <span id="tierPill" class="tier-pill">Tier 3</span>
+    <span id="tierDesc" class="tier-desc">Under €100k/month — minimum NR 0.80%</span>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="stat-lbl">Current NR (€/mo)</div>
+      <div class="stat-val" id="sCurrentNR">—</div>
+      <div class="stat-sub" id="sCurrentNRpct">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Target NR (€/mo)</div>
+      <div class="stat-val" id="sTargetNR">—</div>
+      <div class="stat-sub" id="sTargetNRpct">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Gap to close (€/mo)</div>
+      <div class="stat-val amber" id="sGap">—</div>
+      <div class="stat-sub">to recover via levers</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Monthly transactions</div>
+      <div class="stat-val" id="sTrx">—</div>
+      <div class="stat-sub" id="sTrxSub">transactions</div>
+    </div>
+  </div>
+
+  <div class="override-row">
+    <div class="field">
+      <label>Override target NR margin</label>
+      <div class="input-wrap">
+        <input type="number" id="targetOverride" placeholder="Auto from tier" min="0" max="5" step="0.1" style="padding-right:26px">
+        <span class="unit">%</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:18px">Leave blank to use tier minimum</div>
+  </div>
+</div>
+
+<!-- ── LEVERS ── -->
+<div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="section-label" style="margin-bottom:0">Recovery Levers</div>
+    <button class="btn btn-primary" onclick="autoSuggestAll()">⚡ Auto-Suggest All</button>
+  </div>
+
+  <table class="lever-table">
+    <thead>
+      <tr>
+        <th style="width:220px">Lever</th>
+        <th style="width:150px;text-align:left">Input</th>
+        <th>Recovery €/mo</th>
+        <th>% of vol</th>
+        <th class="center" style="width:110px">Feasibility</th>
+        <th style="width:80px"></th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- Lever 0: All other cards -->
+      <tr>
+        <td>
+          <div class="lever-name">All other cards margin</div>
+          <div class="lever-desc">IC++ margin on EEA + International</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l0" value="0" min="0" max="0.5" step="0.01">
+            <span class="unit">%</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l0rec">€0</td>
+        <td class="lever-pct" id="l0pct">0.000%</td>
+        <td style="text-align:center"><span id="l0chip" class="chip chip-na">—</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(0)">Suggest</button></td>
+      </tr>
+
+      <!-- Lever 1: Processing fee -->
+      <tr>
+        <td>
+          <div class="lever-name">Processing fee uplift</div>
+          <div class="lever-desc">Added to existing flat fee</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l1" value="0" min="0" step="0.01">
+            <span class="unit">€/trx</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l1rec">€0</td>
+        <td class="lever-pct" id="l1pct">0.000%</td>
+        <td style="text-align:center"><span class="chip chip-na">Always</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(1)">Suggest</button></td>
+      </tr>
+
+      <!-- Lever 2: DCC -->
+      <tr>
+        <td>
+          <div class="lever-name">DCC volume</div>
+          <div class="lever-desc" id="l2desc">% of DCC-eligible volume</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l2" value="0" min="0" max="100" step="1">
+            <span class="unit">%</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l2rec">€0</td>
+        <td class="lever-pct" id="l2pct">0.000%</td>
+        <td style="text-align:center"><span id="l2chip" class="chip chip-ok">✓ OK</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(2)">Suggest</button></td>
+      </tr>
+
+      <!-- Lever 3: Issuing -->
+      <tr>
+        <td>
+          <div class="lever-name">Issuing commitment</div>
+          <div class="lever-desc">% of dom consumer volume via Viva cards</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l3" value="0" min="0" max="100" step="1">
+            <span class="unit">%</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l3rec">€0</td>
+        <td class="lever-pct" id="l3pct">0.000%</td>
+        <td style="text-align:center"><span id="l3chip" class="chip chip-ok">✓ OK</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(3)">Suggest</button></td>
+      </tr>
+
+      <!-- Lever 4: T+n -->
+      <tr>
+        <td>
+          <div class="lever-name">Extra settlement delay</div>
+          <div class="lever-desc">Additional T+n working days (float)</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l4" value="0" min="0" max="60" step="1">
+            <span class="unit">days</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l4rec">€0</td>
+        <td class="lever-pct" id="l4pct">0.000%</td>
+        <td style="text-align:center"><span class="chip chip-na">Always</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(4)">Suggest</button></td>
+      </tr>
+
+      <!-- Lever 5: Deposits -->
+      <tr>
+        <td>
+          <div class="lever-name">Deposit balance</div>
+          <div class="lever-desc">% of monthly volume kept with Viva</div>
+        </td>
+        <td class="lever-input">
+          <div class="input-wrap">
+            <input type="number" id="l5" value="0" min="0" step="1">
+            <span class="unit">%</span>
+          </div>
+        </td>
+        <td class="lever-rec" id="l5rec">€0</td>
+        <td class="lever-pct" id="l5pct">0.000%</td>
+        <td style="text-align:center"><span class="chip chip-na">Always</span></td>
+        <td style="text-align:right"><button class="btn btn-outline" onclick="suggestLever(5)">Suggest</button></td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<!-- ── OFFER SUMMARY ── -->
+<div class="card">
+  <div class="section-label">What You're Offering the Merchant</div>
+  <div class="offer-grid">
+    <div class="offer-section">
+      <div class="offer-section-title">Acquiring Rates</div>
+      <div class="offer-row">
+        <div class="offer-key">Dom consumer cards</div>
+        <div>
+          <div class="offer-val" id="offerDomRate">—</div>
+          <div class="offer-sub" id="offerDomRateSub">—</div>
+        </div>
+      </div>
+      <div class="offer-row">
+        <div class="offer-key" id="offerOtherLabel">EEA &amp; Intl cards</div>
+        <div>
+          <div class="offer-val" id="offerOtherRate">—</div>
+          <div class="offer-sub">IC++ + margin above cost</div>
+        </div>
+      </div>
+      <div class="offer-row">
+        <div class="offer-key">Processing fee</div>
+        <div>
+          <div class="offer-val" id="offerFee">—</div>
+          <div class="offer-sub" id="offerFeeSub">—</div>
+        </div>
+      </div>
+      <div class="offer-row">
+        <div class="offer-key">Settlement</div>
+        <div>
+          <div class="offer-val" id="offerSettlement">—</div>
+          <div class="offer-sub">working days</div>
+        </div>
+      </div>
+    </div>
+    <div class="offer-section">
+      <div class="offer-section-title">Commercial Commitments</div>
+      <div class="offer-row">
+        <div class="offer-key" id="offerDCCLabel">DCC</div>
+        <div>
+          <div class="offer-val" id="offerDCC">—</div>
+          <div class="offer-sub" id="offerDCCSub">—</div>
+        </div>
+      </div>
+      <div class="offer-row">
+        <div class="offer-key">Issuing</div>
+        <div>
+          <div class="offer-val" id="offerIssuing">—</div>
+          <div class="offer-sub" id="offerIssuingSub">—</div>
+        </div>
+      </div>
+      <div class="offer-row">
+        <div class="offer-key">Deposit balance</div>
+        <div>
+          <div class="offer-val" id="offerDeposit">—</div>
+          <div class="offer-sub" id="offerDepositSub">—</div>
+        </div>
+      </div>
+      <div class="offer-row" id="offerISVRow" style="display:none">
+        <div class="offer-key" id="offerISVLabel">ISV fee</div>
+        <div>
+          <div class="offer-val" id="offerISVVal">—</div>
+          <div class="offer-sub" id="offerISVSub">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUMMARY ── -->
+<div class="card">
+  <div class="section-label">Summary</div>
+
+  <div class="sum-grid">
+    <div class="stat-box">
+      <div class="stat-lbl">Total recovery</div>
+      <div class="stat-val green" id="sumRec">€0</div>
+      <div class="stat-sub" id="sumRecPct">0.000% of vol</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Gap remaining</div>
+      <div class="stat-val" id="sumGap">—</div>
+      <div class="stat-sub">per month</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Achieved NR margin</div>
+      <div class="stat-val" id="sumNR">—</div>
+      <div class="stat-sub" id="sumNReur">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Gap covered</div>
+      <div class="stat-val" id="sumCov">0%</div>
+      <div class="stat-sub">of required recovery</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="progLeft">Current NR</span>
+      <span id="progRight">Target NR</span>
+    </div>
+    <div class="progress-bg">
+      <div class="progress-fill" id="progFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div id="statusBanner" class="status status-warn">
+    <span id="statusText">⚠ Calculating…</span>
+    <span id="statusDetail" style="font-size:12px;opacity:0.75"></span>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ─── helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function fmtEur(n) {
+  return '€' + Math.round(Math.abs(n)).toLocaleString('en-GB');
+}
+function fmtPct(n, d = 3) {
+  return (n * 100).toFixed(d) + '%';
+}
+function fmtNum(n) {
+  return Math.round(n).toLocaleString('en-GB');
+}
+
+// ─── read inputs ────────────────────────────────────────────────────────────
+function getIn() {
+  const pct = id => (+$(id).value || 0) / 100;
+  const num = id => +$(id).value || 0;
+
+  const volume      = num('volume');
+  const atv         = Math.max(num('atv'), 0.01);
+  const domMargin   = pct('domMargin');
+  const domCost     = pct('domCost');
+  const procFee     = num('processingFee');
+  const domShare    = pct('domShare');
+  const eeaShare    = pct('eeaShare');
+  const intlShare   = Math.max(0, 1 - domShare - eeaShare);
+  const bogRate     = pct('bogRate');
+  const depYield    = pct('depositYield');
+  const dccProfit   = pct('dccProfit');
+  const workDays    = Math.max(num('workingDays'), 1);
+  const issuingRate = pct('issuingRate');
+  const baseTn      = num('baseTn');
+  const overrideVal = $('targetOverride').value;
+  const targetOverride = overrideVal !== '' ? +overrideVal / 100 : null;
+
+  const isEuroZone = $('currencyZone').value === 'euro';
+
+  const l0 = pct('l0');           // all other cards margin %
+  const l1 = num('l1');           // processing fee uplift EUR/trx
+  const l2 = Math.min(pct('l2') * 100, 100) / 100; // DCC % of eligible vol (0–1)
+  const l3 = Math.min(pct('l3') * 100, 100) / 100; // Issuing % dom vol (0–1)
+  const l4 = num('l4');           // extra T+n days
+  const l5 = pct('l5');           // deposit % of monthly vol
+
+  // ISV
+  const isvEnabled  = $('isvEnabled').checked;
+  const isvMode     = isvEnabled && $('tabRevShare').classList.contains('active') ? 'revshare' : 'ontop';
+  const isvFeeType  = $('isvFeeType').value;
+  const isvFeePct   = pct('isvFeePct');
+  const isvFeeFlat  = num('isvFeeFlat');
+  const isvMerch    = Math.max(num('isvMerchants'), 1);
+  const mPos = [0,1,2,3].map(n => $('mPos'+n).checked);
+  const mNeg = [0,1,2,3].map(n => $('mNeg'+n).checked);
+
+  return { volume, atv, domMargin, domCost, procFee,
+           domShare, eeaShare, intlShare,
+           bogRate, depYield, dccProfit, workDays, issuingRate, baseTn,
+           targetOverride, isEuroZone,
+           isvEnabled, isvMode, isvFeeType, isvFeePct, isvFeeFlat, isvMerch, mPos, mNeg,
+           l0, l1, l2, l3, l4, l5 };
+}
+
+// ─── core calculation ───────────────────────────────────────────────────────
+function calc(i) {
+  const trx       = i.volume / i.atv;
+  const domVol    = i.volume * i.domShare;
+  const eeaVol    = i.volume * i.eeaShare;
+  const otherVol  = i.volume * (i.eeaShare + i.intlShare);
+  const intlVol   = i.volume * i.intlShare;
+  // DCC-eligible volume: only international for Euro zone; EEA+Intl for non-Euro
+  const dccVol    = i.isEuroZone ? intlVol : (eeaVol + intlVol);
+  const tnRevDay  = i.volume * i.bogRate / i.workDays;
+
+  // Tier
+  let tier, minNR;
+  if      (i.volume >= 200000) { tier = 1; minNR = 0.006; }
+  else if (i.volume >= 100000) { tier = 2; minNR = 0.007; }
+  else                          { tier = 3; minNR = 0.008; }
+
+  const targetNRpct  = i.targetOverride !== null ? i.targetOverride : minNR;
+  const currentNR    = domVol * i.domMargin + trx * i.procFee;
+  const currentNRpct = i.volume > 0 ? currentNR / i.volume : 0;
+  const targetNR     = targetNRpct * i.volume;
+  const gap          = Math.max(0, targetNR - currentNR);
+
+  // Lever recoveries
+  const r0 = i.l0 * otherVol;
+  const r1 = i.l1 * trx;
+  const r2 = Math.min(i.l2, 1) * dccVol * i.dccProfit;
+  const r3 = Math.min(i.l3, 1) * domVol * i.issuingRate;
+  const r4 = i.l4 * tnRevDay;
+  const r5 = i.l5 * i.volume * i.depYield / 12;
+
+  const totalRec      = r0 + r1 + r2 + r3 + r4 + r5;
+  const achievedNRpct = currentNRpct + (i.volume > 0 ? totalRec / i.volume : 0);
+  const achievedNR    = currentNR + totalRec;
+
+  // ── ISV calculations ──
+  let isvOnTopMonthly = 0, isvMerchRate = 0;
+  let isvTier = '—', isvBaseRevPct = 0, isvEffRevPct = 0;
+  let isvRevSharePerMerch = 0, isvRevShareTotal = 0;
+  let vivaRetainedNR = achievedNR, vivaRetainedNRpct = achievedNRpct;
+  let adjTargetNR = targetNR; // gap target adjusted for rev share
+
+  if (i.isvEnabled) {
+    if (i.isvMode === 'ontop') {
+      // On top fee: charged to merchant, not from Viva NR
+      const feeFromPct  = (i.isvFeeType === 'pct'  || i.isvFeeType === 'both') ? i.isvFeePct * i.volume : 0;
+      const feeFromFlat = (i.isvFeeType === 'flat' || i.isvFeeType === 'both') ? i.isvFeeFlat * trx : 0;
+      isvOnTopMonthly = feeFromPct + feeFromFlat;
+      // Merchant effective rate includes ISV fee on top of Viva's dom blended rate
+      isvMerchRate = achievedNRpct + (i.volume > 0 ? isvOnTopMonthly / i.volume : 0);
+    } else {
+      // Rev share: comes out of Viva NR
+      const annualNA = achievedNR * i.isvMerch * 12;
+
+      // Tier & base rev share
+      if      (annualNA < 50000)    { isvTier = 'Below Threshold'; isvBaseRevPct = 0; }
+      else if (annualNA < 200000)   { isvTier = 'Preferred';       isvBaseRevPct = 0.10; }
+      else if (annualNA < 400000)   { isvTier = 'Preferred';       isvBaseRevPct = 0.15; }
+      else if (annualNA < 500000)   { isvTier = 'Preferred';       isvBaseRevPct = 0.20; }
+      else if (annualNA < 800000)   { isvTier = 'Strategic';       isvBaseRevPct = 0.20; }
+      else if (annualNA < 1200000)  { isvTier = 'Strategic';       isvBaseRevPct = 0.25; }
+      else                           { isvTier = 'Strategic';       isvBaseRevPct = 0.30; }
+
+      // Multipliers
+      const posAdj = i.mPos.filter(Boolean).length * 0.05;
+      const negAdj = i.mNeg.filter(Boolean).length * -0.05;
+      const preCap = Math.max(isvBaseRevPct + posAdj + negAdj, 0);
+      isvEffRevPct = Math.min(preCap, 0.40);
+
+      // Floor: 0.2% retention — rev share only funded above this
+      const minRetentionFloor = 0.002 * i.volume;
+      const shareable = Math.max(achievedNR - minRetentionFloor, 0);
+      isvRevSharePerMerch = Math.min(isvEffRevPct * achievedNR, shareable);
+      isvRevShareTotal = isvRevSharePerMerch * i.isvMerch;
+
+      vivaRetainedNR    = achievedNR - isvRevSharePerMerch;
+      vivaRetainedNRpct = i.volume > 0 ? vivaRetainedNR / i.volume : 0;
+
+      // Adjusted gap: levers must produce enough so Viva retains targetNR after payout
+      // (1 - effRev%) × achievedNR >= targetNR → achievedNR >= targetNR / (1 - effRev%)
+      if (isvEffRevPct < 1) {
+        adjTargetNR = targetNR / (1 - isvEffRevPct);
+      }
+    }
+  }
+
+  const effectiveGap  = Math.max(0, adjTargetNR - currentNR);
+  const gapRemain     = Math.max(0, effectiveGap - totalRec);
+  const coverage      = effectiveGap > 0 ? Math.min(totalRec / effectiveGap, 1) : 1;
+  const revShareGapExtra = adjTargetNR - targetNR; // additional gap caused by rev share
+
+  return {
+    trx, domVol, eeaVol, otherVol, intlVol, dccVol, tnRevDay,
+    tier, minNR, targetNRpct,
+    currentNR, currentNRpct,
+    targetNR, gap: effectiveGap,
+    r0, r1, r2, r3, r4, r5,
+    totalRec, achievedNRpct, achievedNR, gapRemain, coverage,
+    isvOnTopMonthly, isvMerchRate,
+    isvTier, isvBaseRevPct, isvEffRevPct,
+    isvRevSharePerMerch, isvRevShareTotal,
+    vivaRetainedNR, vivaRetainedNRpct,
+    revShareGapExtra, adjTargetNR
+  };
+}
+
+// ─── render ─────────────────────────────────────────────────────────────────
+function render() {
+  const i = getIn();
+  const c = calc(i);
+
+  // Intl share
+  $('intlShare').value = (i.intlShare * 100).toFixed(1);
+
+  // Currency zone notice
+  const zoneEl = $('zoneNotice');
+  if (i.isEuroZone) {
+    zoneEl.className = 'zone-notice euro';
+    $('zoneNoticeText').textContent = 'Euro zone — DCC applies to international cards only';
+    $('l2desc').textContent = '% of international card volume (cap: 50%)';
+    $('offerDCCLabel').textContent = 'DCC (intl cards)';
+  } else {
+    zoneEl.className = 'zone-notice noneuro';
+    $('zoneNoticeText').textContent = 'Non-Euro zone — EEA cards are also DCC-eligible (they transact in a foreign currency)';
+    $('l2desc').textContent = '% of EEA + international volume (cap: 50%)';
+    $('offerDCCLabel').textContent = 'DCC (EEA + intl cards)';
+  }
+
+  // Tier
+  const tierDescs = ['','€200k+/month — minimum NR 0.60%','€100k–200k/month — minimum NR 0.70%','Under €100k/month — minimum NR 0.80%'];
+  $('tierPill').textContent = 'Tier ' + c.tier;
+  $('tierDesc').textContent = tierDescs[c.tier];
+
+  // Stats
+  $('sCurrentNR').textContent    = fmtEur(c.currentNR);
+  $('sCurrentNRpct').textContent = fmtPct(c.currentNRpct) + ' of volume';
+  $('sTargetNR').textContent     = fmtEur(c.targetNR);
+  $('sTargetNRpct').textContent  = fmtPct(c.targetNRpct) + ' of volume';
+  $('sGap').textContent          = fmtEur(c.gap);
+  $('sTrx').textContent          = fmtNum(c.trx);
+
+  // Lever display
+  const recs = [c.r0, c.r1, c.r2, c.r3, c.r4, c.r5];
+  recs.forEach((r, idx) => {
+    $(`l${idx}rec`).textContent = fmtEur(r);
+    $(`l${idx}pct`).textContent = i.volume > 0 ? fmtPct(r / i.volume) : '0.000%';
+  });
+
+  // DCC feasibility (cap is 50%)
+  $('l2chip').className   = 'chip ' + (i.l2 > 0.5 ? 'chip-warn' : 'chip-ok');
+  $('l2chip').textContent = i.l2 > 0.5 ? '⚠ above 50% cap' : '✓ within cap';
+
+  // Issuing feasibility
+  $('l3chip').className   = 'chip ' + (i.l3 > 1 ? 'chip-warn' : 'chip-ok');
+  $('l3chip').textContent = i.l3 > 1 ? '⚠ cap exceeded' : '✓ within cap';
+
+  // All other cards chip
+  $('l0chip').className   = 'chip ' + (i.l0 > 0.005 ? 'chip-warn' : 'chip-na');
+  $('l0chip').textContent = i.l0 > 0.005 ? '⚠ above 0.5%' : '—';
+
+  // ── ISV outputs ──
+  if (i.isvEnabled) {
+    if (i.isvMode === 'ontop') {
+      $('isvOut0Lbl').textContent = 'ISV monthly earnings';
+      $('isvOut0').textContent    = fmtEur(c.isvOnTopMonthly);
+      $('isvOut0Sub').textContent = 'paid by merchant to ISV';
+      $('isvOut1Lbl').textContent = 'Merchant effective rate';
+      $('isvOut1').textContent    = fmtPct(c.isvMerchRate);
+      $('isvOut1Sub').textContent = 'Viva rate + ISV fee';
+      $('isvOut2Box').style.display = 'none';
+      $('isvOut3Box').style.display = 'none';
+      $('isvRevNote').style.display  = 'none';
+      // Offer summary ISV row
+      $('offerISVRow').style.display   = '';
+      $('offerISVLabel').textContent   = 'ISV on top fee';
+      const isvParts = [];
+      if (i.isvFeeType === 'pct'  || i.isvFeeType === 'both') isvParts.push(fmtPct(i.isvFeePct,2) + ' of vol');
+      if (i.isvFeeType === 'flat' || i.isvFeeType === 'both') isvParts.push('€' + i.isvFeeFlat.toFixed(2) + '/trx');
+      $('offerISVVal').textContent = isvParts.join(' + ');
+      $('offerISVSub').textContent = fmtEur(c.isvOnTopMonthly) + '/mo to ISV';
+    } else {
+      // Rev share tier display
+      $('isvTier').textContent   = c.isvTier;
+      $('isvBaseRevShare').textContent = fmtPct(c.isvBaseRevPct);
+      const adjNet = (c.isvEffRevPct - c.isvBaseRevPct);
+      $('isvBaseRevSub').textContent = adjNet > 0 ? `+${fmtPct(adjNet)} adjustments` : adjNet < 0 ? `${fmtPct(adjNet)} adjustments` : 'no adjustments';
+      $('isvEffRevShare').textContent = fmtPct(c.isvEffRevPct);
+      $('isvEffRevShare').className   = 'stat-val ' + (c.isvEffRevPct >= 0.3 ? 'amber' : 'green');
+      $('isvEffRevSub').textContent   = c.isvEffRevPct >= 0.40 ? 'at 40% absolute cap' : 'incl. adjustments';
+
+      $('isvOut0Lbl').textContent = 'ISV monthly earnings (per merch)';
+      $('isvOut0').textContent    = fmtEur(c.isvRevSharePerMerch);
+      $('isvOut0Sub').textContent = `${fmtPct(c.isvEffRevPct)} × Viva NR`;
+      $('isvOut1Lbl').textContent = 'Total portfolio payout/mo';
+      $('isvOut1').textContent    = fmtEur(c.isvRevShareTotal);
+      $('isvOut1Sub').textContent = `${i.isvMerch} merchants`;
+      $('isvOut2Box').style.display = '';
+      $('isvOut2Lbl').textContent = 'Viva retains (per merch)';
+      $('isvOut2').textContent    = fmtEur(c.vivaRetainedNR);
+      $('isvOut2').className      = 'stat-val ' + (c.vivaRetainedNRpct >= c.targetNRpct ? 'green' : 'amber');
+      $('isvOut2Sub').textContent = fmtPct(c.vivaRetainedNRpct) + ' of volume';
+      $('isvOut3Box').style.display = '';
+      $('isvOut3').textContent    = c.revShareGapExtra > 0 ? fmtEur(c.revShareGapExtra) + '/mo' : '—';
+      if (c.revShareGapExtra > 0) {
+        $('isvRevNote').style.display = '';
+        $('isvRevNote').textContent = `⚠ Rev share adds ${fmtEur(c.revShareGapExtra)}/mo to the recovery gap. The levers below have been adjusted — they must now reach ${fmtPct(c.adjTargetNR / i.volume)} NR so Viva retains ${fmtPct(c.targetNRpct)} after the payout.`;
+      } else {
+        $('isvRevNote').style.display = 'none';
+      }
+      // Offer summary ISV row
+      $('offerISVRow').style.display   = '';
+      $('offerISVLabel').textContent   = 'ISV rev share';
+      $('offerISVVal').textContent     = fmtPct(c.isvEffRevPct) + ' of NR';
+      $('offerISVSub').textContent     = '≈' + fmtEur(c.isvRevSharePerMerch) + '/mo per merchant';
+    }
+  } else {
+    $('isvOut2Box').style.display = 'none';
+    $('isvOut3Box').style.display = 'none';
+    $('isvRevNote').style.display  = 'none';
+    $('offerISVRow').style.display = 'none';
+  }
+
+  // ── Offer summary ──
+  const domBlended = i.domMargin + i.domCost;
+  $('offerDomRate').textContent    = fmtPct(domBlended, 2);
+  $('offerDomRateSub').textContent = `IC cost ${fmtPct(i.domCost,2)} + margin ${fmtPct(i.domMargin,2)}`;
+
+  $('offerOtherLabel').textContent = i.isEuroZone ? 'EEA & Intl cards' : 'EEA & Intl cards';
+  $('offerOtherRate').textContent  = i.l0 > 0 ? `IC++ + ${fmtPct(i.l0,2)}` : 'IC++ (pass-through)';
+
+  const totalFee = i.procFee + i.l1;
+  $('offerFee').textContent    = totalFee > 0 ? `€${totalFee.toFixed(2)}/trx` : 'None';
+  $('offerFeeSub').textContent = i.l1 > 0
+    ? `base €${i.procFee.toFixed(2)} + uplift €${i.l1.toFixed(2)}`
+    : 'no processing fee';
+
+  const totalTn = i.baseTn + i.l4;
+  $('offerSettlement').textContent = `T+${totalTn}`;
+
+  // DCC
+  const dccPct = Math.round(i.l2 * 100);
+  if (dccPct > 0 && c.dccVol > 0) {
+    $('offerDCC').textContent    = `${dccPct}% of eligible volume`;
+    $('offerDCCSub').textContent = `≈${fmtEur(c.r2)}/mo to Viva`;
+  } else {
+    $('offerDCC').innerHTML = '<span class="offer-na">Not committed</span>';
+    $('offerDCCSub').textContent = '';
+  }
+
+  // Issuing
+  const issPct = Math.round(i.l3 * 100);
+  if (issPct > 0 && c.domVol > 0) {
+    $('offerIssuing').textContent    = `${issPct}% of dom volume`;
+    $('offerIssuingSub').textContent = `≈${fmtEur(c.r3)}/mo to Viva`;
+  } else {
+    $('offerIssuing').innerHTML = '<span class="offer-na">Not committed</span>';
+    $('offerIssuingSub').textContent = '';
+  }
+
+  // Deposit
+  const depPct = Math.round(i.l5 * 100);
+  if (depPct > 0) {
+    const depAmt = depPct / 100 * i.volume;
+    $('offerDeposit').textContent    = `${fmtEur(depAmt)} (${depPct}% of vol)`;
+    $('offerDepositSub').textContent = `≈${fmtEur(c.r5)}/mo yield to Viva`;
+  } else {
+    $('offerDeposit').innerHTML = '<span class="offer-na">Not committed</span>';
+    $('offerDepositSub').textContent = '';
+  }
+
+  // Summary
+  $('sumRec').textContent  = fmtEur(c.totalRec);
+  $('sumRecPct').textContent = fmtPct(i.volume > 0 ? c.totalRec / i.volume : 0) + ' of vol';
+  $('sumGap').textContent  = fmtEur(c.gapRemain);
+  $('sumGap').className    = 'stat-val ' + (c.gapRemain > 0 ? 'amber' : 'green');
+  $('sumNR').textContent   = fmtPct(c.achievedNRpct);
+  $('sumNR').className     = 'stat-val ' + (c.achievedNRpct >= c.targetNRpct ? 'green' : 'amber');
+  $('sumNReur').textContent = fmtEur(c.achievedNR) + '/mo';
+  $('sumCov').textContent  = Math.round(c.coverage * 100) + '%';
+
+  // Progress bar
+  const pct = Math.min(c.coverage * 100, 100);
+  $('progFill').style.width = pct + '%';
+  $('progFill').style.background = c.achievedNRpct >= c.targetNRpct
+    ? '#057a55'
+    : pct > 66 ? '#d97706' : '#1a56db';
+
+  $('progLeft').textContent  = 'Current NR: ' + fmtPct(c.currentNRpct);
+  $('progRight').textContent = 'Target NR: '  + fmtPct(c.targetNRpct);
+
+  // Status — when rev share is on, check if Viva retains the target NR
+  const revShareActive = i.isvEnabled && i.isvMode === 'revshare';
+  const checkNR  = revShareActive ? c.vivaRetainedNRpct : c.achievedNRpct;
+  const met      = checkNR >= c.targetNRpct;
+  $('statusBanner').className = 'status ' + (met ? 'status-ok' : 'status-warn');
+  if (met) {
+    const label = revShareActive ? 'Viva retains' : 'achieved NR';
+    $('statusText').textContent   = `✓ Target met — ${label} ${fmtPct(checkNR)} vs target ${fmtPct(c.targetNRpct)}`;
+    $('statusDetail').textContent = revShareActive
+      ? `ISV payout: ${fmtEur(c.isvRevSharePerMerch)}/mo`
+      : `Surplus: ${fmtEur(c.totalRec - c.gap)}/mo`;
+  } else {
+    $('statusText').textContent   = `⚠ Below target — ${fmtEur(c.gapRemain)}/mo still to recover`;
+    $('statusDetail').textContent = `${Math.round(c.coverage * 100)}% of gap covered`;
+  }
+}
+
+// ─── auto-suggest all levers ────────────────────────────────────────────────
+function autoSuggestAll() {
+  ['l0','l1','l2','l3','l4','l5'].forEach(id => $(id).value = 0);
+
+  const i  = getIn();
+  const c  = calc(i);
+  let rem  = c.gap;
+
+  if (rem <= 0.005) { render(); return; }
+
+  // 0. All other cards — up to 0.5% margin
+  if (c.otherVol > 0) {
+    const maxRec = 0.005 * c.otherVol;
+    const rate   = Math.min(rem, maxRec) / c.otherVol;
+    $('l0').value = (rate * 100).toFixed(3);
+    rem -= rate * c.otherVol;
+  }
+  if (rem <= 0.005) { render(); return; }
+
+  // 1. Processing fee
+  if (c.trx > 0) {
+    const fee = rem / c.trx;
+    $('l1').value = fee.toFixed(4);
+    rem -= fee * c.trx;
+  }
+  if (rem <= 0.005) { render(); return; }
+
+  // 2. DCC — capped at 50% of eligible volume
+  if (c.dccVol > 0) {
+    const maxDccVol = c.dccVol * 0.5;
+    const needed    = rem / i.dccProfit;
+    const capped    = Math.min(needed, maxDccVol);
+    $('l2').value   = Math.round((capped / c.dccVol) * 100);
+    rem -= capped * i.dccProfit;
+  }
+  if (rem <= 0.005) { render(); return; }
+
+  // 3. Issuing — capped at 100% of dom vol
+  if (c.domVol > 0) {
+    const needed = rem / i.issuingRate;
+    const capped = Math.min(needed, c.domVol);
+    $('l3').value = Math.round((capped / c.domVol) * 100);
+    rem -= capped * i.issuingRate;
+  }
+  if (rem <= 0.005) { render(); return; }
+
+  // 4. T+n days
+  if (c.tnRevDay > 0) {
+    const days = Math.ceil(rem / c.tnRevDay);
+    $('l4').value = days;
+    rem -= days * c.tnRevDay;
+  }
+  if (rem <= 0.005) { render(); return; }
+
+  // 5. Deposits
+  const monthYield = i.depYield / 12;
+  if (monthYield > 0 && i.volume > 0) {
+    const balNeeded = rem / monthYield;
+    $('l5').value = Math.ceil((balNeeded / i.volume) * 100);
+  }
+
+  render();
+}
+
+// ─── suggest single lever (covers remaining gap with just this lever) ────────
+function suggestLever(idx) {
+  const i  = getIn();
+  const c  = calc(i);
+  const recs = [c.r0, c.r1, c.r2, c.r3, c.r4, c.r5];
+
+  // gap if this lever were zero
+  const rem = Math.max(0, c.gapRemain + recs[idx]);
+
+  if (rem <= 0.005) { render(); return; }
+
+  switch (idx) {
+    case 0:
+      if (c.otherVol > 0) {
+        const rate = Math.min(rem / c.otherVol, 0.005);
+        $('l0').value = (rate * 100).toFixed(3);
+      }
+      break;
+    case 1:
+      if (c.trx > 0) $('l1').value = (rem / c.trx).toFixed(4);
+      break;
+    case 2:
+      if (c.dccVol > 0) {
+        const pct = Math.min(rem / (c.dccVol * i.dccProfit), 0.5); // hard cap at 50%
+        $('l2').value = Math.round(pct * 100);
+      }
+      break;
+    case 3:
+      if (c.domVol > 0) {
+        const pct = Math.min(rem / (c.domVol * i.issuingRate), 1);
+        $('l3').value = Math.round(pct * 100);
+      }
+      break;
+    case 4:
+      if (c.tnRevDay > 0) $('l4').value = Math.ceil(rem / c.tnRevDay);
+      break;
+    case 5: {
+      const monthYield = i.depYield / 12;
+      if (monthYield > 0 && i.volume > 0)
+        $('l5').value = Math.ceil((rem / monthYield / i.volume) * 100);
+      break;
+    }
+  }
+  render();
+}
+
+// ─── advanced toggle ─────────────────────────────────────────────────────────
+function toggleAdv() {
+  const body = $('advBody');
+  const icon = $('advIcon');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  icon.textContent   = open ? '▶' : '▼';
+}
+
+// ─── ISV helpers ─────────────────────────────────────────────────────────────
+function toggleISV() {
+  $('isvPanel').style.display = $('isvEnabled').checked ? 'block' : 'none';
+  render();
+}
+
+function switchISVTab(tab) {
+  const isOnTop = tab === 'ontop';
+  $('tabOnTop').classList.toggle('active', isOnTop);
+  $('tabRevShare').classList.toggle('active', !isOnTop);
+  $('panelOnTop').style.display    = isOnTop ? 'block' : 'none';
+  $('panelRevShare').style.display = isOnTop ? 'none'  : 'block';
+  render();
+}
+
+function toggleMult(id, wrap) {
+  const cb = $(id);
+  cb.checked = !cb.checked;
+  wrap.classList.toggle('checked', cb.checked);
+  render();
+}
+
+// ─── wire events ─────────────────────────────────────────────────────────────
+document.querySelectorAll('input[type=number]').forEach(el => el.addEventListener('input', render));
+$('currencyZone').addEventListener('change', render);
+$('isvFeeType').addEventListener('change', render);
+
+render();
+</script>
+</body>
+</html>
