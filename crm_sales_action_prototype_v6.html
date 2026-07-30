@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRM Front-End — Phase 1 Prototype (v5)</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #687386;
+      --line: #e4e9f2;
+      --primary: #2458ff;
+      --primary-soft: #eef3ff;
+      --success: #0f8f5f;
+      --success-soft: #f0fdf4;
+      --warning: #b66a00;
+      --warning-soft: #fff7ed;
+      --danger: #c43838;
+      --danger-soft: #fef2f2;
+      --shadow: 0 14px 40px rgba(24,39,75,.10);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+    button, input, select, textarea { font: inherit; }
+
+    /* ── Layout ── */
+    .app { display: grid; grid-template-columns: 260px minmax(0,1fr) 340px; min-height: 100vh; }
+    .sidebar { background: #111827; color: #fff; padding: 22px 18px; display: flex; flex-direction: column; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -.03em; padding: 0 6px; }
+    .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#3b82f6,#22c55e); display: grid; place-items: center; font-weight: 900; font-size: 15px; flex-shrink: 0; }
+    .nav-section { display: grid; gap: 2px; }
+    .nav-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: rgba(255,255,255,.38); text-transform: uppercase; padding: 10px 12px 4px; }
+    .nav-item { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; color: rgba(255,255,255,.65); cursor: pointer; border: 0; background: transparent; text-align: left; font-size: 14px; font-weight: 500; width: 100%; }
+    .nav-item.active, .nav-item:hover { color: #fff; background: rgba(255,255,255,.10); }
+    .nav-item .nav-icon { width: 20px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; background: rgba(255,255,255,.06); padding: 14px; border-radius: 12px; color: rgba(255,255,255,.6); font-size: 12px; line-height: 1.5; }
+    .main { padding: 26px; overflow: auto; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 16px; }
+    .topbar-left h1 { margin: 0; font-size: 26px; letter-spacing: -.04em; }
+    .topbar-left p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+    .device-toggle { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); gap: 3px; }
+    .device-toggle button { border: 0; background: transparent; padding: 7px 13px; border-radius: 999px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .device-toggle button.active { background: var(--primary); color: #fff; }
+    .prototype-frame { position: relative; }
+    .prototype-frame.mobile { max-width: 430px; margin: 0 auto; border: 10px solid #151923; border-radius: 34px; overflow: hidden; box-shadow: var(--shadow); }
+
+    /* ── In-phone sheet (Field Sales record updates render inside the mocked phone, not a page-wide drawer) ── */
+    .phone-sheet-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.4); display: none; align-items: flex-end; z-index: 25; }
+    .phone-sheet-backdrop.open { display: flex; }
+    .phone-sheet { width: 100%; max-height: 90%; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(15,23,42,.2); display: flex; flex-direction: column; animation: sheetUp .18s ease-out; }
+    @keyframes sheetUp { from { transform: translateY(28px); opacity: .7; } to { transform: none; opacity: 1; } }
+    .phone-sheet-handle { width: 36px; height: 4px; border-radius: 999px; background: var(--line); margin: 10px auto 2px; flex-shrink: 0; }
+    .phone-sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 10px 18px 12px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+    .phone-sheet-header strong { display: block; font-size: 16px; letter-spacing: -.02em; }
+    .phone-sheet-header .small { display: block; margin-top: 2px; }
+    .phone-sheet-content { padding: 16px 18px 22px; overflow-y: auto; }
+    .screen { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .screen-header { padding: 22px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .screen-body { padding: 22px 24px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Panel ── */
+    .panel { background: var(--card); border-left: 1px solid var(--line); padding: 22px; overflow: auto; }
+    .panel-title { font-size: 16px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px; }
+    .panel-sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+    .crm-log { display: grid; gap: 10px; }
+    .log-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfcff; font-size: 12px; line-height: 1.5; }
+    .log-item strong { display: block; font-size: 13px; margin-bottom: 3px; }
+    .log-item .log-time { color: var(--muted); font-size: 11px; margin-top: 6px; }
+
+    /* ── KPI ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .kpi-card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: #fbfcff; }
+    .kpi-card strong { display: block; font-size: 22px; letter-spacing: -.04em; margin-bottom: 2px; }
+    .kpi-card span { color: var(--muted); font-size: 12px; line-height: 1.4; display: block; }
+    .kpi-card.alert { border-color: #fecaca; background: var(--danger-soft); }
+    .kpi-card.alert strong { color: var(--danger); }
+
+    /* ── Daily focus ── */
+    .daily-focus { border: 1px solid #fed7aa; background: var(--warning-soft); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .focus-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--warning); margin-bottom: 10px; }
+    .focus-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(180,83,9,.15); }
+    .focus-row:first-of-type { border-top: 0; padding-top: 0; }
+    .focus-row-info strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .focus-row-info span { color: var(--muted); font-size: 12px; }
+
+    /* ── Cold alert ── */
+    .cold-strip { border: 1px solid #fecaca; background: var(--danger-soft); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; }
+    .cold-strip-icon { font-size: 22px; flex-shrink: 0; }
+    .cold-strip-text strong { display: block; font-size: 14px; color: var(--danger); margin-bottom: 2px; }
+    .cold-strip-text span { color: var(--muted); font-size: 12px; }
+
+    /* ── Toolbar / filters ── */
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .search { min-width: 200px; flex: 1; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: 13px; }
+    .filter-btn { border: 1px solid var(--line); background: #fff; padding: 8px 12px; border-radius: 999px; cursor: pointer; font-weight: 700; color: var(--muted); font-size: 13px; }
+    .filter-btn.active, .filter-btn:hover { background: var(--primary-soft); color: var(--primary); border-color: #c7d2fe; }
+
+    /* ── Lead table ── */
+    .lead-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .lead-table th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 0 12px; }
+    .lead-table td { background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px; vertical-align: top; }
+    .lead-table td:first-child { border-left: 1px solid var(--line); border-radius: 12px 0 0 12px; }
+    .lead-table td:last-child { border-right: 1px solid var(--line); border-radius: 0 12px 12px 0; }
+    .lead-name { font-weight: 800; display: block; margin-bottom: 2px; font-size: 14px; }
+    .small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .prio-score { width: 44px; height: 44px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-weight: 900; font-size: 15px; }
+    .prio-score.hot { background: var(--warning-soft); color: var(--warning); }
+    .prio-score.cold { background: var(--danger-soft); color: var(--danger); }
+
+    /* ── Tags ── */
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .tag { padding: 4px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 700; }
+    .tag.green { background: var(--success-soft); color: var(--success); }
+    .tag.orange { background: var(--warning-soft); color: var(--warning); }
+    .tag.blue { background: var(--primary-soft); color: var(--primary); }
+    .tag.red { background: var(--danger-soft); color: var(--danger); }
+
+    /* ── Buttons ── */
+    .btn { border: 1px solid var(--line); border-radius: 999px; background: #fff; padding: 10px 16px; cursor: pointer; font-weight: 700; font-size: 14px; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.success { background: var(--success); border-color: var(--success); color: #fff; }
+    .btn.warning { background: var(--warning-soft); border-color: #fed7aa; color: var(--warning); }
+    .btn.danger { background: var(--danger-soft); border-color: #fecaca; color: var(--danger); }
+    .btn.sm { padding: 7px 12px; font-size: 12px; }
+
+    /* ── Lead detail ── */
+    .lead-title h2 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+    .lead-title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .status-pill { padding: 6px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 12px; white-space: nowrap; }
+    .status-pill.hot { background: var(--warning-soft); color: var(--warning); }
+    .status-pill.green { background: var(--success-soft); color: var(--success); }
+    .info-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+    .info-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfcff; }
+    .info-card .label { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .info-card .value { font-weight: 700; font-size: 14px; }
+    .info-card.highlight { border-color: #c7d2fe; background: var(--primary-soft); }
+    .info-card.highlight .value { color: var(--primary); }
+
+    /* ── Stage stepper ── */
+    .stage-section { margin-bottom: 18px; }
+    .stage-section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+    .stage-stepper { display: flex; align-items: center; gap: 0; margin-bottom: 12px; }
+    .stage-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+    .stage-step:not(:last-child)::after { content: ''; position: absolute; top: 13px; left: calc(50% + 14px); right: calc(-50% + 14px); height: 2px; background: var(--line); z-index: 0; }
+    .stage-step.done:not(:last-child)::after { background: var(--success); }
+    .stage-dot { width: 28px; height: 28px; border-radius: 999px; border: 2px solid var(--line); background: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; z-index: 1; color: var(--muted); }
+    .stage-step.done .stage-dot { background: var(--success); border-color: var(--success); color: #fff; }
+    .stage-step.active .stage-dot { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 4px rgba(36,88,255,.15); }
+    .stage-name { font-size: 10px; font-weight: 600; color: var(--muted); margin-top: 5px; text-align: center; line-height: 1.3; }
+    .stage-step.done .stage-name { color: var(--success); }
+    .stage-step.active .stage-name { color: var(--primary); font-weight: 800; }
+    .stage-requirements { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfcff; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .stage-req-text { font-size: 13px; color: var(--muted); }
+    .stage-req-text strong { display: block; color: var(--text); margin-bottom: 3px; }
+    .req-item { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+    .req-item::before { content: '○'; color: var(--warning); font-size: 10px; }
+    .req-item.met::before { content: '✓'; color: var(--success); }
+
+    /* ── Actions ── */
+    .actions-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; margin-top: 18px; }
+    .actions { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+    .action-btn { border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 14px 8px; cursor: pointer; display: grid; gap: 6px; justify-items: center; text-align: center; min-height: 96px; transition: transform .1s, box-shadow .1s, border-color .1s; }
+    .action-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(24,39,75,.10); border-color: #c7d2fe; }
+    .action-icon { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-size: 18px; }
+    .action-btn strong { font-size: 13px; }
+    .action-btn span { color: var(--muted); font-size: 11px; line-height: 1.3; }
+
+    /* ── Activity feed ── */
+    .activity-list { display: grid; gap: 8px; margin-top: 14px; }
+    .activity { border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; display: grid; gap: 2px; background: #fff; }
+    .activity strong { font-size: 13px; }
+    .activity span { color: var(--muted); font-size: 12px; }
+
+    /* ── Team view ── */
+    .team-section { margin-bottom: 20px; }
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+    .team-kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .panel-card { border: 1px solid var(--line); border-radius: 14px; background: #fff; overflow: hidden; }
+    .panel-card-head { padding: 13px 16px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .rep-table { width: 100%; border-collapse: collapse; }
+    .rep-table th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 8px 14px; border-bottom: 1px solid var(--line); background: #fafbff; }
+    .rep-table td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid var(--line); }
+    .rep-table tr:last-child td { border-bottom: 0; }
+    .rep-avatar { width: 28px; height: 28px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); display: inline-grid; place-items: center; font-weight: 800; font-size: 11px; margin-right: 8px; vertical-align: middle; }
+    .rep-avatar.low { background: var(--danger-soft); color: var(--danger); }
+    .activity-bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; width: 60px; display: inline-block; vertical-align: middle; margin-left: 6px; }
+    .activity-bar-fill { height: 100%; border-radius: 999px; background: var(--primary); }
+    .activity-bar-fill.low { background: var(--danger); }
+    .pipeline-rows { padding: 4px 0; }
+    .pipeline-row { padding: 10px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); }
+    .pipeline-row:last-child { border-bottom: 0; }
+    .pipeline-stage-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .pipeline-count { font-size: 18px; font-weight: 800; letter-spacing: -.03em; color: var(--primary); width: 32px; }
+    .pipeline-tpv { font-size: 12px; color: var(--muted); }
+    .pipeline-dot { width: 10px; height: 10px; border-radius: 999px; flex-shrink: 0; }
+    .cold-table { width: 100%; }
+    .cold-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--line); }
+    .cold-row:last-child { border-bottom: 0; }
+    .cold-days { font-size: 13px; font-weight: 800; color: var(--danger); width: 44px; flex-shrink: 0; }
+    .cold-info { flex: 1; }
+    .cold-info strong { display: block; font-size: 13px; }
+    .cold-info span { color: var(--muted); font-size: 12px; }
+    .next-actions-list { padding: 4px 0; }
+    .next-action-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+    .next-action-row:last-child { border-bottom: 0; }
+    .next-action-rep { font-size: 11px; font-weight: 700; color: var(--primary); width: 56px; flex-shrink: 0; margin-top: 1px; }
+    .next-action-info strong { display: block; font-size: 13px; }
+    .next-action-info span { color: var(--muted); font-size: 12px; }
+
+    /* ── Drawer ── */
+    .drawer-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.36); display: none; justify-content: flex-end; z-index: 20; }
+    .drawer-backdrop.open { display: flex; }
+    .drawer { width: min(540px,100%); background: #fff; min-height: 100vh; box-shadow: -20px 0 40px rgba(15,23,42,.18); display: flex; flex-direction: column; animation: slideIn .15s ease-out; }
+    @keyframes slideIn { from { transform: translateX(24px); opacity: .8; } to { transform: none; opacity: 1; } }
+    .drawer-header { padding: 20px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .drawer-header h2 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
+    .drawer-header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .close-btn { border: 1px solid var(--line); background: #fff; border-radius: 999px; width: 36px; height: 36px; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+    .drawer-body { padding: 22px; overflow: auto; flex: 1; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .step h3 { margin: 0 0 6px; font-size: 20px; letter-spacing: -.03em; }
+    .step .hint { color: var(--muted); margin: 0 0 16px; line-height: 1.5; font-size: 14px; }
+    .choice-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin: 14px 0; }
+    .choice { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 13px 14px; text-align: left; cursor: pointer; font-weight: 700; font-size: 14px; transition: border-color .1s, background .1s; }
+    .choice:hover, .choice.selected { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+    .field { display: grid; gap: 6px; margin-bottom: 12px; }
+    .field label { font-weight: 700; font-size: 13px; }
+    .field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: #fff; color: var(--text); font-size: 14px; }
+    .field textarea { min-height: 80px; resize: vertical; }
+    .button-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+    .purecloud-box { border: 1px solid #dbeafe; border-radius: 14px; padding: 16px; background: #eff6ff; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+    .spinner { width: 26px; height: 26px; border: 3px solid #bfdbfe; border-top-color: var(--primary); border-radius: 999px; animation: spin .9s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .confirmation { border: 1px solid #bbf7d0; background: var(--success-soft); color: #166534; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; font-weight: 700; font-size: 14px; }
+    .data-preview { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fbfcff; margin-bottom: 14px; }
+    .data-preview .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+    .soft-req-notice { border: 1px solid #fed7aa; background: var(--warning-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
+    .soft-req-notice strong { display: block; margin-bottom: 4px; color: var(--warning); }
+
+    /* ── Mobile overrides ── */
+    .mobile .screen-header { padding: 16px; display: grid; }
+    .mobile .screen-body { padding: 16px; }
+    .mobile .info-grid { grid-template-columns: 1fr; }
+    .mobile .kpi-grid, .mobile .team-kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .mobile .actions { grid-template-columns: repeat(2,1fr); }
+    .mobile .two-col { grid-template-columns: 1fr; }
+    .mobile .lead-table, .mobile .lead-table tbody, .mobile .lead-table tr, .mobile .lead-table td { display: block; width: 100%; }
+    .mobile .lead-table thead { display: none; }
+    .mobile .lead-table tr { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: #fff; }
+    .mobile .lead-table td { border: 0; padding: 6px 0; }
+    .mobile .stage-name { font-size: 9px; }
+    .nav-item.soon { opacity: .4; cursor: default; pointer-events: none; }
+    .nav-item.soon .nav-badge { margin-left: auto; font-size: 9px; font-weight: 700; background: rgba(255,255,255,.15); padding: 2px 6px; border-radius: 999px; }
+
+    /* ── Persona switch ── */
+    .persona-toggle { display: flex; padding: 3px; border-radius: 12px; background: rgba(255,255,255,.06); gap: 3px; margin-bottom: 4px; }
+    .persona-toggle button { flex: 1; border: 0; background: transparent; padding: 9px 8px; border-radius: 9px; cursor: pointer; color: rgba(255,255,255,.55); font-size: 12px; font-weight: 700; }
+    .persona-toggle button.active { background: #fff; color: #111827; }
+
+    /* ── Phase tag ── */
+    .phase2-tag { display: inline-block; padding: 3px 9px; border-radius: 999px; background: #ecfdf5; border: 1px solid #a7f3d0; color: var(--success); font-size: 10px; font-weight: 800; letter-spacing: .03em; margin-left: 8px; vertical-align: middle; }
+
+    /* ── Offline banner ── */
+    .offline-banner { border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; }
+    .offline-banner.online { background: var(--success-soft); border: 1px solid #bbf7d0; color: var(--success); }
+    .offline-banner.offline { background: var(--warning-soft); border: 1px solid #fed7aa; color: var(--warning); }
+    .offline-banner .sub { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+    /* ── Map placeholder ── */
+    .map-box { position: relative; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 14px; background:
+      linear-gradient(#eef2fb,#eef2fb) , repeating-linear-gradient(0deg, rgba(148,163,184,.18) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(148,163,184,.18) 0 1px, transparent 1px 34px); border: 1px solid var(--line); }
+    .map-you { position: absolute; width: 14px; height: 14px; border-radius: 999px; background: var(--primary); border: 3px solid #fff; box-shadow: 0 0 0 5px rgba(36,88,255,.2); transform: translate(-50%,-50%); }
+    .map-pin { position: absolute; transform: translate(-50%,-100%); cursor: pointer; text-align: center; }
+    .map-pin .dot { width: 26px; height: 26px; border-radius: 999px 999px 999px 2px; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; transform: rotate(45deg); box-shadow: 0 4px 10px rgba(24,39,75,.25); margin: 0 auto; }
+    .map-pin .dot span { transform: rotate(-45deg); }
+    .map-pin.high .dot { background: var(--warning); }
+    .map-pin.cold .dot { background: var(--danger); }
+    .map-pin.selected .dot { outline: 3px solid #fff; outline-offset: 1px; }
+    .map-radius { position: absolute; border-radius: 999px; border: 1px dashed rgba(36,88,255,.35); background: rgba(36,88,255,.05); transform: translate(-50%,-50%); }
+
+    /* ── Nearby list ── */
+    .nearby-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+    .nearby-dist { width: 52px; flex-shrink: 0; text-align: center; }
+    .nearby-dist strong { display: block; font-size: 15px; letter-spacing: -.02em; }
+    .nearby-dist span { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .nearby-info { flex: 1; min-width: 0; }
+    .nearby-info strong { display: block; font-size: 14px; }
+    .nearby-info span { color: var(--muted); font-size: 12px; }
+    .nearby-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── Floating quick-log button ── */
+    .fab { position: fixed; right: 24px; bottom: 24px; z-index: 15; background: var(--primary); color: #fff; border: 0; border-radius: 999px; padding: 15px 20px; font-weight: 800; font-size: 14px; box-shadow: 0 14px 30px rgba(36,88,255,.4); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+
+    /* ── Catch-up ── */
+    .catchup-card { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+    .catchup-card.done { opacity: .45; }
+    .catchup-info { flex: 1; }
+    .catchup-info strong { display: block; font-size: 14px; }
+    .catchup-info span { color: var(--muted); font-size: 12px; }
+    .progress-track { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 4px 0 16px; }
+    .progress-fill { height: 100%; background: var(--success); border-radius: 999px; transition: width .2s; }
+
+    /* ── Quick capture (30-second) ── */
+    .quick-tap-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin: 12px 0; }
+    .quick-tap { border: 1px solid var(--line); background: #fbfcff; border-radius: 12px; padding: 16px 10px; text-align: center; cursor: pointer; font-weight: 800; font-size: 13px; display: grid; gap: 6px; justify-items: center; }
+    .quick-tap:hover, .quick-tap.selected { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+    .quick-tap .qi { font-size: 20px; }
+    @media (max-width:1100px) { .app { grid-template-columns: 1fr; } .sidebar, .panel { display: none; } .main { padding: 16px; } .two-col { grid-template-columns: 1fr; } .actions { grid-template-columns: repeat(2,1fr); } .kpi-grid, .team-kpi-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:620px) { .topbar { flex-direction: column; } .info-grid, .actions, .choice-grid, .kpi-grid, .team-kpi-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">S</div><span>SalesFlow</span></div>
+
+    <div class="persona-toggle">
+      <button id="personaInsideBtn" class="active" onclick="setPersona('inside')">Inside Sales</button>
+      <button id="personaFieldBtn" onclick="setPersona('field')">Field Sales</button>
+    </div>
+
+    <div id="navInsideGroup">
+      <div class="nav-section">
+        <div class="nav-label">My work</div>
+        <button class="nav-item active" id="navOverview" onclick="showView('overview')"><span class="nav-icon">🏠</span> Daily overview</button>
+        <button class="nav-item" id="navDetail" onclick="showView('detail')"><span class="nav-icon">👤</span> Lead detail</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Activity</div>
+        <button class="nav-item soon" disabled><span class="nav-icon">📞</span> Calls <span class="nav-badge">soon</span></button>
+        <button class="nav-item soon" disabled><span class="nav-icon">✉️</span> Emails <span class="nav-badge">soon</span></button>
+        <button class="nav-item soon" disabled><span class="nav-icon">📅</span> Meetings <span class="nav-badge">soon</span></button>
+      </div>
+    </div>
+
+    <div id="navFieldGroup" style="display:none">
+      <div class="nav-section">
+        <div class="nav-label">My work — on the road</div>
+        <button class="nav-item" id="navFieldNear" onclick="showView('fieldNear')"><span class="nav-icon">📍</span> Near me</button>
+        <button class="nav-item" id="navFieldArea" onclick="showView('fieldArea')"><span class="nav-icon">🗺️</span> Territory plan</button>
+        <button class="nav-item" id="navFieldCatchup" onclick="showView('fieldCatchup')"><span class="nav-icon">🌙</span> Catch-up</button>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Management</div>
+      <button class="nav-item" id="navTeam" onclick="showView('team')"><span class="nav-icon">📊</span> Team view</button>
+    </div>
+
+    <div class="sidebar-footer" id="sidebarFooter">Inside Sales & Telesales · Desktop · Data writes structured records to Dynamics automatically.</div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="topbarTitle">Daily overview</h1>
+        <p id="topbarSub">Prioritised leads and your focus for today.</p>
+      </div>
+      <div class="topbar-right" id="deviceToggleWrap">
+        <div class="device-toggle">
+          <button id="desktopBtn" class="active" onclick="setDevice('desktop')">Desktop</button>
+          <button id="mobileBtn" onclick="setDevice('mobile')">Mobile preview</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="prototypeFrame" class="prototype-frame">
+      <section class="screen">
+
+        <!-- ══ OVERVIEW ══ -->
+        <div id="overviewView" class="view active">
+          <div class="screen-header">
+            <div class="lead-title"><h2>Good morning, Albin 👋</h2><p>Tuesday · Your focus list is ready. Start with the highest-priority lead.</p></div>
+            <div class="status-pill hot">Inside Sales</div>
+          </div>
+          <div class="screen-body">
+
+            <div class="kpi-grid">
+              <div class="kpi-card"><strong>12</strong><span>Open leads assigned to you</span></div>
+              <div class="kpi-card"><strong>4</strong><span>High-value leads need action today</span></div>
+              <div class="kpi-card"><strong>€3.8M</strong><span>Estimated monthly TPV in pipeline</span></div>
+              <div class="kpi-card alert"><strong>6</strong><span>Follow-ups overdue or due today</span></div>
+            </div>
+
+            <div class="daily-focus">
+              <div class="focus-header">🎯 Daily focus</div>
+              <div class="focus-row">
+                <div class="focus-row-info"><strong>Top priority: Nordic Bistro AB</strong><span>High TPV, DCC match, follow-up overdue 2 days. Last contact was an email — call now.</span></div>
+                <button class="btn primary sm" onclick="openLead('nordic')">Open lead</button>
+              </div>
+              <div class="focus-row">
+                <div class="focus-row-info"><strong>2 meetings need outcome logging</strong><span>Capture next steps before the details fade — Hotel Svea Group and West Retail.</span></div>
+                <button class="btn warning sm" onclick="openFlow('past')">Log outcome</button>
+              </div>
+              <div class="focus-row">
+                <div class="focus-row-info"><strong>Proposal due: Hotel Svea Group</strong><span>Requested in yesterday's meeting. Send before end of day.</span></div>
+                <button class="btn sm" onclick="openLead('hotel')">Open lead</button>
+              </div>
+            </div>
+
+            <div class="cold-strip">
+              <div class="cold-strip-icon">🧊</div>
+              <div class="cold-strip-text">
+                <strong>3 leads going cold</strong>
+                <span>No contact in 7+ days. Active Gym AB (14 days), Nordic Tech Hub (8 days), Cafe Lilla Torget (7 days).</span>
+              </div>
+              <button class="btn danger sm" onclick="setFilter('overdue')">Review</button>
+            </div>
+
+            <div class="toolbar">
+              <input id="leadSearch" class="search" placeholder="Search by merchant, city, segment, owner…" oninput="renderLeadTable()" />
+              <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+              <button class="filter-btn" data-filter="today" onclick="setFilter('today')">Needs action</button>
+              <button class="filter-btn" data-filter="high" onclick="setFilter('high')">High value</button>
+              <button class="filter-btn" data-filter="dcc" onclick="setFilter('dcc')">DCC fit</button>
+              <button class="filter-btn" data-filter="overdue" onclick="setFilter('overdue')">Overdue / cold</button>
+            </div>
+
+            <table class="lead-table">
+              <thead><tr><th>Priority</th><th>Lead / Opportunity</th><th>Value signals</th><th>Last contact &amp; next action</th><th></th></tr></thead>
+              <tbody id="leadRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ DETAIL ══ -->
+        <div id="detailView" class="view">
+          <div class="screen-header">
+            <div class="lead-title">
+              <h2 id="detailName">Nordic Bistro AB</h2>
+              <p id="detailMeta">Lead · Hospitality · DCC campaign · Assigned to Albin</p>
+            </div>
+            <div class="status-pill" id="leadStatusPill">Contacted</div>
+          </div>
+          <div class="screen-body">
+            <button class="btn sm" style="margin-bottom:16px" onclick="showView('overview')">← Back to overview</button>
+
+            <!-- Last contact — prominent front page -->
+            <div class="info-grid" style="margin-bottom:14px;">
+              <div class="info-card highlight"><div class="label">Last contact date</div><div class="value" id="lastContactDate">2 days ago</div></div>
+              <div class="info-card highlight"><div class="label">Last contact topic</div><div class="value" id="lastContactTopic">DCC savings explanation</div></div>
+              <div class="info-card highlight"><div class="label">Last activity</div><div class="value" id="lastContactActivity">Email sent by Maria S.</div></div>
+            </div>
+
+            <!-- Value signals -->
+            <div class="info-grid">
+              <div class="info-card"><div class="label">Potential TPV</div><div class="value" id="detailTpv">€1.2M / month</div></div>
+              <div class="info-card"><div class="label">TNR estimate</div><div class="value" id="detailTnr">€18,000 / month</div></div>
+              <div class="info-card"><div class="label">Revenue tier</div><div class="value" id="detailRevenue">€25–50M</div></div>
+              <div class="info-card"><div class="label">Priority basis</div><div class="value" id="detailBasis">TPV + DCC match</div></div>
+              <div class="info-card"><div class="label">Next action</div><div class="value" id="nextAction">Call customer</div></div>
+              <div class="info-card"><div class="label">Services</div><div class="value" id="detailServices">Acquiring, DCC, Terminals</div></div>
+            </div>
+
+            <!-- Stage stepper -->
+            <div class="stage-section">
+              <div class="stage-section-label">Pipeline stage</div>
+              <div class="stage-stepper" id="stageStepper"></div>
+              <div class="stage-requirements" id="stageRequirements"></div>
+            </div>
+
+            <!-- Activity summary -->
+            <div class="info-card" style="margin-bottom:14px;">
+              <div class="label">Activity summary</div>
+              <div id="activityTags" class="tag-list"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions-label">Actions</div>
+            <div class="actions">
+              <button class="action-btn" data-flow="call"><div class="action-icon">📞</div><strong>Call</strong><span>PureCloud · structured outcome</span></button>
+              <button class="action-btn" data-flow="email"><div class="action-icon">✉️</div><strong>Email</strong><span>Template · send · follow-up</span></button>
+              <button class="action-btn" data-flow="meeting"><div class="action-icon">📅</div><strong>Book meeting</strong><span>Schedule with post-meeting capture</span></button>
+              <button class="action-btn" data-flow="past"><div class="action-icon">📝</div><strong>Register past event</strong><span>Log call, meeting, or other</span></button>
+              <button class="action-btn" data-flow="edit"><div class="action-icon">✏️</div><strong>Update lead</strong><span>Guided update with stage check</span></button>
+            </div>
+
+            <!-- Activity feed -->
+            <div class="section-label" style="margin-top:22px;">Recent activity</div>
+            <div class="activity-list" id="activityFeed"></div>
+          </div>
+        </div>
+
+        <!-- ══ TEAM VIEW ══ -->
+        <div id="teamView" class="view">
+          <div class="screen-header">
+            <div class="lead-title"><h2>Team overview</h2><p>Inside Sales · Week of 27 July 2026 · Updated live as reps log activities.</p></div>
+            <div class="status-pill green">Live</div>
+          </div>
+          <div class="screen-body">
+
+            <div class="team-kpi-grid">
+              <div class="kpi-card"><strong>30</strong><span>Calls logged today across team</span></div>
+              <div class="kpi-card"><strong>11</strong><span>Meetings booked this week</span></div>
+              <div class="kpi-card"><strong>33</strong><span>Leads worked this week</span></div>
+              <div class="kpi-card alert"><strong>3</strong><span>Leads going cold — no contact 7+ days</span></div>
+            </div>
+
+            <div class="two-col">
+              <!-- Rep activity -->
+              <div class="panel-card">
+                <div class="panel-card-head"><span>Rep activity</span><span style="font-size:11px;color:var(--muted);font-weight:500">This week</span></div>
+                <table class="rep-table">
+                  <thead><tr><th>Rep</th><th>Calls (today / wk)</th><th>Meetings (today / wk)</th><th>Follow-ups (today / wk)</th></tr></thead>
+                  <tbody id="repRows"></tbody>
+                </table>
+              </div>
+
+              <!-- Pipeline by stage -->
+              <div class="panel-card">
+                <div class="panel-card-head"><span>Pipeline by stage</span><span style="font-size:11px;color:var(--muted);font-weight:500">All reps</span></div>
+                <div class="pipeline-rows" id="pipelineRows"></div>
+              </div>
+            </div>
+
+            <div class="two-col">
+              <!-- Going cold -->
+              <div class="panel-card">
+                <div class="panel-card-head" style="color:var(--danger)"><span>🧊 Going cold</span><span style="font-size:11px;font-weight:500;color:var(--muted)">No contact 7+ days</span></div>
+                <div id="coldRows"></div>
+              </div>
+
+              <!-- Next actions committed -->
+              <div class="panel-card">
+                <div class="panel-card-head"><span>Committed next actions</span><span style="font-size:11px;color:var(--muted);font-weight:500">From last logged activity</span></div>
+                <div class="next-actions-list" id="nextActionsRows"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ══ FIELD: NEAR ME ══ -->
+        <div id="fieldNearView" class="view">
+          <div class="screen-header">
+            <div class="lead-title"><h2>Near me <span class="phase2-tag">Phase 2</span></h2><p>Merchants closest to your current location, ranked by distance and priority.</p></div>
+            <div class="status-pill hot">Field Sales</div>
+          </div>
+          <div class="screen-body">
+
+            <div id="offlineBanner" class="offline-banner online">
+              <div>🟢 <span id="offlineText">Online — visits sync to Dynamics instantly.</span><span class="sub" id="offlineSub">Tap to simulate going offline mid-route.</span></div>
+              <button class="btn sm" id="offlineToggleBtn" onclick="toggleOffline()">Simulate offline</button>
+            </div>
+
+            <div class="kpi-grid">
+              <div class="kpi-card"><strong>6</strong><span>Merchants within 5km</span></div>
+              <div class="kpi-card"><strong>3</strong><span>Stops planned today</span></div>
+              <div class="kpi-card"><strong>1</strong><span>High-priority nearby</span></div>
+              <div class="kpi-card alert"><strong>1</strong><span>Cold — no contact 7+ days, nearby</span></div>
+            </div>
+
+            <div class="map-box" id="nearMap"></div>
+
+            <div class="section-label">Sorted by distance</div>
+            <div id="nearbyList"></div>
+          </div>
+        </div>
+
+        <!-- ══ FIELD: TERRITORY PLAN ══ -->
+        <div id="fieldAreaView" class="view">
+          <div class="screen-header">
+            <div class="lead-title"><h2>Territory plan <span class="phase2-tag">Phase 2</span></h2><p>All merchants in your territory — filter to plan today's route.</p></div>
+            <div class="status-pill hot">Field Sales</div>
+          </div>
+          <div class="screen-body">
+            <div class="toolbar">
+              <button class="filter-btn active" data-areafilter="all" onclick="setAreaFilter('all')">All</button>
+              <button class="filter-btn" data-areafilter="high" onclick="setAreaFilter('high')">High priority</button>
+              <button class="filter-btn" data-areafilter="cold" onclick="setAreaFilter('cold')">Cold</button>
+              <button class="filter-btn" data-areafilter="dcc" onclick="setAreaFilter('dcc')">DCC fit</button>
+            </div>
+            <div class="map-box" id="areaMap"></div>
+            <div class="section-label">Merchants in territory</div>
+            <div id="areaList"></div>
+          </div>
+        </div>
+
+        <!-- ══ FIELD: END-OF-DAY CATCH-UP ══ -->
+        <div id="fieldCatchupView" class="view">
+          <div class="screen-header">
+            <div class="lead-title"><h2>End-of-day catch-up <span class="phase2-tag">Phase 2</span></h2><p>Log everything from today in one guided pass — under two minutes.</p></div>
+            <div class="status-pill hot">Field Sales</div>
+          </div>
+          <div class="screen-body">
+            <div class="progress-track"><div class="progress-fill" id="catchupProgress" style="width:0%"></div></div>
+            <div id="catchupSummary" class="small" style="margin-bottom:14px;"></div>
+            <div id="catchupList"></div>
+            <div class="button-row" style="justify-content:flex-start;margin-top:16px;">
+              <button class="btn primary" id="catchupStartBtn" onclick="startCatchup()">Start catch-up</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Field Sales record-update UI renders here, inside the mocked phone — not a page-wide drawer -->
+      <div id="phoneSheetBackdrop" class="phone-sheet-backdrop" onclick="if(event.target.id==='phoneSheetBackdrop')closePhoneSheet()">
+        <div class="phone-sheet">
+          <div class="phone-sheet-handle"></div>
+          <div id="phoneSheetHeader" class="phone-sheet-header"></div>
+          <div id="phoneSheetBody" class="phone-sheet-content"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <button class="fab" id="fieldFab" style="display:none" onclick="openQuickCapture()">⚡ Quick log</button>
+
+  <!-- ── Right panel ── -->
+  <aside class="panel">
+    <p class="panel-title">CRM update log</p>
+    <p class="panel-sub">Structured records saved this session — written to Dynamics automatically.</p>
+    <div id="crmLog" class="crm-log"><div class="log-item">No updates yet this session.</div></div>
+  </aside>
+</div>
+
+<!-- ── Drawer ── -->
+<div id="drawerBackdrop" class="drawer-backdrop">
+  <section class="drawer" role="dialog" aria-modal="true">
+    <div class="drawer-header">
+      <div><h2 id="drawerTitle">Action</h2><p id="drawerSub">Guided workflow</p></div>
+      <button class="close-btn" onclick="closeDrawer()">×</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+  </section>
+</div>
+
+<script>
+/* ─── Data ─────────────────────────────────────────────────────────────────── */
+// Stage labels follow the brief's Lead → Opportunity model: Open/Contacted/Qualified
+// are Lead stages; Opportunity/Won are Opportunity stages (brief §5).
+const STAGES = ['Open', 'Contacted', 'Qualified', 'Opportunity', 'Won'];
+const STAGE_COLORS = ['#94a3b8','#2458ff','#b66a00','#0f8f5f','#22c55e'];
+const STAGE_REQS = {
+  'Contacted':   ['First activity logged (call, email, or meeting)'],
+  'Qualified':   ['TPV estimate entered', 'Revenue tier set'],
+  'Opportunity': ['Primary service confirmed', 'Decision-maker contact added', 'Expected close date set'],
+  'Won':         ['Actual TPV / TNR entered', 'Merchant verified transacting'],
+};
+
+const leads = [
+  { id:'nordic', name:'Nordic Bistro AB', type:'Lead', segment:'Hospitality', city:'Stockholm', campaign:'DCC campaign', owner:'Albin', stage:'Contacted', score:94, priority:'High', action:'Call customer', due:'Overdue', topic:'DCC savings explanation', tpv:'€1.2M / month', tnr:'€18,000 / month', revenue:'€25–50M', services:['Acquiring','DCC','Terminals'], basis:'TPV + DCC match', lastDate:'2 days ago', lastTopic:'DCC savings explanation', lastActivity:'Email sent by Maria S.', daysSince:2, activity:['Email sent','Appointment booked','Follow-up overdue','Next step: Call'] },
+  { id:'hotel',  name:'Hotel Svea Group',  type:'Opportunity', segment:'Hotel', city:'Gothenburg', campaign:'Hospitality list', owner:'Albin', stage:'Qualified', score:88, priority:'High', action:'Send proposal', due:'Today', topic:'Pre-auth + acquiring', tpv:'€2.1M / month', tnr:'€31,500 / month', revenue:'€50–100M', services:['Acquiring','Pre-auth','DCC'], basis:'Acquiring volume + services match', lastDate:'Today 09:20', lastTopic:'Meeting completed', lastActivity:'Albin logged meeting outcome', daysSince:0, activity:['Meeting completed','Proposal task open','Next step: Send proposal'] },
+  { id:'retail', name:'West Retail Stores', type:'Lead', segment:'Retail', city:'Malmö', campaign:'Partner referral', owner:'Albin', stage:'Qualified', score:79, priority:'Medium', action:'Check verification', due:'Today', topic:'Verification pending', tpv:'€850k / month', tnr:'€12,750 / month', revenue:'€10–25M', services:['Acquiring','Terminals'], basis:'TPV + account progress mismatch', lastDate:'Today 08:05', lastTopic:'Account created', lastActivity:'System updated account status', daysSince:0, activity:['Account created','Verification pending','Next step: Check status'] },
+  { id:'cafe',   name:'Cafe Lilla Torget',  type:'Lead', segment:'Hospitality', city:'Uppsala', campaign:'DCC campaign', owner:'Albin', stage:'Contacted', score:65, priority:'Medium', action:'Schedule follow-up', due:'Tomorrow', topic:'Requested callback', tpv:'€320k / month', tnr:'€4,800 / month', revenue:'€5–10M', services:['DCC','Terminals'], basis:'DCC fit + callback requested', lastDate:'7 days ago', lastTopic:'Call — no answer', lastActivity:'Erik L. completed call', daysSince:7, activity:['Call answered','Callback requested','Next step: Schedule call'] },
+  { id:'gym',    name:'Active Gym AB',       type:'Lead', segment:'Services', city:'Stockholm', campaign:'Outbound list', owner:'Sofia K', stage:'Open', score:47, priority:'Low', action:'Email outreach', due:'Later', topic:'Initial outreach', tpv:'€180k / month', tnr:'€2,700 / month', revenue:'€2–5M', services:['Acquiring'], basis:'Lower TPV — lower priority', lastDate:'14 days ago', lastTopic:'Lead created', lastActivity:'Lead created by system', daysSince:14, activity:['No recent activity','Next step: Email'] },
+];
+
+const teamMembers = [
+  { name:'Albin W',  initials:'AW', callsToday:4, callsWeek:18, meetingsToday:1, meetingsWeek:3, followupsToday:2, followupsWeek:7, low:false },
+  { name:'Maria S',  initials:'MS', callsToday:6, callsWeek:22, meetingsToday:0, meetingsWeek:2, followupsToday:1, followupsWeek:5, low:false },
+  { name:'Erik L',   initials:'EL', callsToday:2, callsWeek:9,  meetingsToday:1, meetingsWeek:5, followupsToday:1, followupsWeek:3, low:false },
+  { name:'Sofia K',  initials:'SK', callsToday:0, callsWeek:4,  meetingsToday:0, meetingsWeek:1, followupsToday:0, followupsWeek:1, low:true  },
+];
+
+const pipelineStages = [
+  { stage:'Open',         count:14, tpv:'€8.2M', color:'#94a3b8' },
+  { stage:'Contacted',    count:9,  tpv:'€5.1M', color:'#2458ff' },
+  { stage:'Qualified',    count:6,  tpv:'€4.7M', color:'#b66a00' },
+  { stage:'Opportunity',  count:4,  tpv:'€3.2M', color:'#0f8f5f' },
+  { stage:'Won',          count:3,  tpv:'€2.1M', color:'#22c55e' },
+];
+
+const coldLeads = [
+  { name:'Active Gym AB',     owner:'Sofia K', days:14, lastAction:'Email sent',       id:'gym'   },
+  { name:'Nordic Tech Hub',   owner:'Sofia K', days:8,  lastAction:'Lead created',     id:'tech'  },
+  { name:'Cafe Lilla Torget', owner:'Erik L',  days:7,  lastAction:'Call — no answer', id:'cafe'  },
+];
+
+const nextActions = [
+  { rep:'Albin',   lead:'Nordic Bistro AB',    action:'Call customer today' },
+  { rep:'Maria S', lead:'Hotel Svea Group',    action:'Send proposal' },
+  { rep:'Erik L',  lead:'West Retail Stores',  action:'Check verification status' },
+  { rep:'Sofia K', lead:'Active Gym AB',       action:'Email outreach — overdue' },
+];
+
+const OUTCOMES = ['Interested','Not interested','Needs more information','Call back later','Wrong contact','Already using our services','Escalate to manager','Other'];
+const NEXT_STEPS = ['Send email','Book meeting','Schedule follow-up call','Create opportunity','Mark as not relevant','Update lead details','No further action needed'];
+
+/* ─── Field Sales (Phase 2) data — mock territory, distances, map coords (%) ──── */
+const fieldMerchants = [
+  { id:'fm1', name:'Storgatan Bakery',     segment:'Hospitality', distance:0.4, priority:'High',   dcc:true,  cold:false, days:1, x:52, y:58, lastVisit:'Yesterday',   note:'Requested pricing follow-up', tpv:'€38k / month',  address:'Storgatan 12, Stockholm' },
+  { id:'fm2', name:'Central Auto Parts',   segment:'Retail',      distance:1.2, priority:'Medium', dcc:false, cold:false, days:3, x:35, y:40, lastVisit:'3 days ago',  note:'Terminal upgrade interest',   tpv:'€64k / month',  address:'Industrigatan 4, Stockholm' },
+  { id:'fm3', name:'Green Valley Grocers', segment:'Retail',      distance:2.1, priority:'High',   dcc:true,  cold:false, days:2, x:70, y:30, lastVisit:'2 days ago',  note:'DCC savings pitch pending',   tpv:'€210k / month', address:'Grönvägen 8, Solna' },
+  { id:'fm4', name:'Lilla Kaffehuset',     segment:'Hospitality', distance:2.8, priority:'Medium', dcc:true,  cold:true,  days:9, x:22, y:72, lastVisit:'9 days ago',  note:'No contact — going cold',     tpv:'€22k / month',  address:'Kaffegränd 3, Stockholm' },
+  { id:'fm5', name:'Nord Fitness Studio',  segment:'Services',    distance:3.5, priority:'Low',    dcc:false, cold:false, days:5, x:80, y:65, lastVisit:'5 days ago',  note:'Initial outreach only',       tpv:'€9k / month',   address:'Idrottsvägen 21, Stockholm' },
+  { id:'fm6', name:'Harbour View Hotel',   segment:'Hotel',       distance:4.6, priority:'High',   dcc:true,  cold:false, days:0, x:15, y:20, lastVisit:'Today',       note:'Proposal follow-up',          tpv:'€310k / month', address:'Hamngatan 1, Stockholm' },
+  { id:'fm7', name:'Torget Pharmacy',      segment:'Retail',      distance:6.2, priority:'Medium', dcc:false, cold:false, days:4, x:60, y:85, lastVisit:'4 days ago',  note:'Verification pending',        tpv:'€47k / month',  address:'Torget 5, Sundbyberg' },
+];
+
+const catchupItems = [
+  { id:'cu1', name:'Harbour View Hotel',   time:'09:15', note:'Dropped by after yesterday\'s proposal chat', done:false },
+  { id:'cu2', name:'Storgatan Bakery',     time:'11:40', note:'Quick check-in on pricing question',           done:false },
+  { id:'cu3', name:'Green Valley Grocers', time:'14:05', note:'Walked through DCC savings on-site',           done:false },
+];
+
+const FIELD_QUICK_OUTCOMES = ['Interested','Not interested','Follow-up needed','Already handled'];
+
+/* ─── State ─────────────────────────────────────────────────────────────────── */
+const state = { view:'overview', selectedId:'nordic', filter:'all', flow:null, data:{}, logs:[],
+  persona:'inside', offline:false, syncQueue:0, areaFilter:'all', catchupIndex:0, quickMerchant:null };
+const sel = () => leads.find(l => l.id === state.selectedId) || leads[0];
+
+/* ─── View routing ───────────────────────────────────────────────────────────── */
+const ALL_VIEWS = ['overview','detail','team','fieldNear','fieldArea','fieldCatchup'];
+const NAV_IDS   = { overview:'navOverview', detail:'navDetail', team:'navTeam', fieldNear:'navFieldNear', fieldArea:'navFieldArea', fieldCatchup:'navFieldCatchup' };
+
+function showView(v) {
+  state.view = v;
+  ALL_VIEWS.forEach(n => {
+    document.getElementById(n+'View').classList.toggle('active', n === v);
+    const nav = document.getElementById(NAV_IDS[n]);
+    if (nav) nav.classList.toggle('active', n === v);
+  });
+  const titles = { overview:'Daily overview', detail:'Lead detail', team:'Team view', fieldNear:'Near me', fieldArea:'Territory plan', fieldCatchup:'End-of-day catch-up' };
+  const subs   = {
+    overview:'Prioritised leads and your focus for today.', detail:'Full lead context and one-click guided actions.', team:'Team activity, pipeline, and cold leads.',
+    fieldNear:'Merchants closest to you right now.', fieldArea:'Plan today\'s route across your territory.', fieldCatchup:'Batch-log everything from today in one guided pass.'
+  };
+  document.getElementById('topbarTitle').textContent = titles[v];
+  document.getElementById('topbarSub').textContent   = subs[v];
+  if (v === 'overview')     renderLeadTable();
+  if (v === 'detail')       renderDetail();
+  if (v === 'team')         renderTeamView();
+  if (v === 'fieldNear')    renderFieldNear();
+  if (v === 'fieldArea')    renderFieldArea();
+  if (v === 'fieldCatchup') renderCatchup();
+
+  // FAB only makes sense on the two field working screens, not team/catch-up
+  document.getElementById('fieldFab').style.display = (state.persona === 'field' && (v === 'fieldNear' || v === 'fieldArea')) ? 'flex' : 'none';
+}
+
+function openLead(id) { state.selectedId = id; showView('detail'); }
+
+/* ─── Persona switch ─────────────────────────────────────────────────────────── */
+function setPersona(p) {
+  state.persona = p;
+  closeDrawer();
+  closePhoneSheet();
+  document.getElementById('personaInsideBtn').classList.toggle('active', p === 'inside');
+  document.getElementById('personaFieldBtn').classList.toggle('active', p === 'field');
+  document.getElementById('navInsideGroup').style.display = p === 'inside' ? '' : 'none';
+  document.getElementById('navFieldGroup').style.display  = p === 'field'  ? '' : 'none';
+
+  // Field Sales (Phase 2) is mobile-native only — the brief is explicit this isn't
+  // a responsive desktop reskin, so there is no desktop mode to offer here.
+  document.getElementById('deviceToggleWrap').style.display = p === 'field' ? 'none' : '';
+  if (p === 'field') {
+    setDevice('mobile');
+    document.getElementById('sidebarFooter').textContent = 'Field Sales · Mobile · Data writes structured records to Dynamics automatically.';
+    showView('fieldNear');
+  } else {
+    setDevice('desktop');
+    document.getElementById('sidebarFooter').textContent = 'Inside Sales & Telesales · Desktop · Data writes structured records to Dynamics automatically.';
+    showView('overview');
+  }
+}
+
+/* ─── Overview ───────────────────────────────────────────────────────────────── */
+function setFilter(f) {
+  state.filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  renderLeadTable();
+}
+
+function renderLeadTable() {
+  const q = (document.getElementById('leadSearch')?.value || '').toLowerCase();
+  const rows = leads
+    .filter(l => !q || [l.name,l.segment,l.city,l.campaign,l.owner,...l.services].join(' ').toLowerCase().includes(q))
+    .filter(l => {
+      if (state.filter === 'all') return true;
+      if (state.filter === 'today') return ['Today','Overdue'].includes(l.due);
+      if (state.filter === 'high') return l.priority === 'High';
+      if (state.filter === 'dcc') return l.services.includes('DCC');
+      if (state.filter === 'overdue') return l.due === 'Overdue' || l.daysSince >= 7;
+      return true;
+    })
+    .sort((a,b) => b.score - a.score);
+
+  const dueClass = d => d === 'Overdue' ? 'red' : d === 'Today' ? 'orange' : 'green';
+  const coldBadge = l => l.daysSince >= 7 ? `<span class="tag red">🧊 Cold — ${l.daysSince}d</span>` : '';
+
+  document.getElementById('leadRows').innerHTML = rows.map(l => `
+    <tr>
+      <td>
+        <div class="prio-score ${l.score>85?'hot':l.daysSince>=7?'cold':''}">${l.score}</div>
+        <div class="small" style="margin-top:4px">${l.priority} prio</div>
+      </td>
+      <td>
+        <span class="lead-name">${l.name}</span>
+        <span class="small">${l.type} · ${l.segment} · ${l.city}</span>
+        <div class="tag-list">
+          <span class="tag blue">${l.stage}</span>
+          <span class="tag ${dueClass(l.due)}">${l.due}</span>
+          ${coldBadge(l)}
+        </div>
+      </td>
+      <td>
+        <strong>${l.tpv}</strong>
+        <div class="small">TNR: ${l.tnr} · ${l.revenue}</div>
+        <div class="tag-list">${l.services.map(s=>`<span class="tag">${s}</span>`).join('')}</div>
+      </td>
+      <td>
+        <strong>${l.action}</strong>
+        <div class="small">Last: ${l.lastDate} · ${l.lastTopic}</div>
+        <div class="small" style="margin-top:2px">${l.lastActivity}</div>
+      </td>
+      <td>
+        <button class="btn primary sm" onclick="openLead('${l.id}')">Open</button>
+        <br/><br/>
+        <button class="btn sm" onclick="state.selectedId='${l.id}'; openFlow('call')">Call</button>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="5" style="padding:20px;color:var(--muted)">No leads match this filter.</td></tr>`;
+}
+
+/* ─── Detail ─────────────────────────────────────────────────────────────────── */
+function renderDetail() {
+  const l = sel();
+  document.getElementById('detailName').textContent        = l.name;
+  document.getElementById('detailMeta').textContent        = `${l.type} · ${l.segment} · ${l.campaign} · Assigned to ${l.owner}`;
+  document.getElementById('leadStatusPill').textContent    = l.stage;
+  document.getElementById('lastContactDate').textContent   = l.logs?.[0]?.time || l.lastDate;
+  document.getElementById('lastContactTopic').textContent  = l.logs?.[0]?.data?.Outcome || l.lastTopic;
+  document.getElementById('lastContactActivity').textContent = l.logs?.[0] ? `${l.logs[0].type} by ${l.owner}` : l.lastActivity;
+  document.getElementById('detailTpv').textContent         = l.tpv;
+  document.getElementById('detailTnr').textContent         = l.tnr;
+  document.getElementById('detailRevenue').textContent     = l.revenue;
+  document.getElementById('detailBasis').textContent       = l.basis;
+  document.getElementById('nextAction').textContent        = l.logs?.[0]?.data?.['Next step'] || l.action;
+  document.getElementById('detailServices').textContent    = l.services.join(', ');
+
+  // Activity tags
+  const allTags = [...(l.activity||[]),'Emails','Appointments','Follow-ups','Notes','Tasks'];
+  document.getElementById('activityTags').innerHTML = allTags.map(a=>`<span class="tag">${a}</span>`).join('');
+
+  // Stage stepper
+  renderStageStepper(l);
+
+  // Activity feed
+  const feed = document.getElementById('activityFeed');
+  const logs = l.logs || [];
+  feed.innerHTML = logs.length
+    ? logs.slice(0,5).map(item=>`<div class="activity"><strong>${item.type} · ${item.message}</strong><span>${fmtData(item.data)}</span><span style="color:var(--muted);font-size:11px;margin-top:2px">${item.time}</span></div>`).join('')
+    : l.activity.map(a=>`<div class="activity"><strong>${a}</strong><span>${l.lastTopic}</span></div>`).join('');
+}
+
+function renderStageStepper(l) {
+  const ci = STAGES.indexOf(l.stage);
+  const stepper = document.getElementById('stageStepper');
+  stepper.innerHTML = STAGES.map((s,i) => {
+    const done   = i < ci;
+    const active = i === ci;
+    const cls    = done ? 'done' : active ? 'active' : '';
+    const dot    = done ? '✓' : i+1;
+    return `<div class="stage-step ${cls}">
+      <div class="stage-dot">${dot}</div>
+      <div class="stage-name">${s}</div>
+    </div>`;
+  }).join('');
+
+  // Requirements for next stage
+  const nextStage = STAGES[ci+1];
+  const req = document.getElementById('stageRequirements');
+  if (!nextStage) {
+    req.innerHTML = `<div class="stage-req-text"><strong>🎉 Deal won</strong>Confirm merchant is transacting to complete.</div>`;
+  } else {
+    const reqs = STAGE_REQS[nextStage] || [];
+    const hasLogs = (l.logs||[]).length > 0;
+    const reqItems = reqs.map((r,i) => {
+      const met = (nextStage === 'Contacted' && hasLogs) || (nextStage === 'Qualified' && (l.tpv && l.revenue));
+      return `<div class="req-item ${met?'met':''}">${r}</div>`;
+    }).join('');
+    req.innerHTML = `
+      <div class="stage-req-text">
+        <strong>To advance to "${nextStage}"</strong>
+        ${reqItems}
+      </div>
+      <button class="btn sm ${(l.logs||[]).length>0?'success':''}" onclick="advanceStage('${l.id}')">
+        ${(l.logs||[]).length>0 ? 'Advance stage →' : 'Log activity first'}
+      </button>`;
+  }
+}
+
+function advanceStage(id) {
+  const l = leads.find(x=>x.id===id);
+  if (!l) return;
+  const ci = STAGES.indexOf(l.stage);
+  if (ci < STAGES.length-1 && (l.logs||[]).length > 0) {
+    l.stage = STAGES[ci+1];
+    renderDetail();
+    addLog({ type:'Stage advance', message:`Moved to "${l.stage}"`, data:{ Lead:l.name, Stage:l.stage }, time:now() });
+  }
+}
+
+/* ─── Team view ──────────────────────────────────────────────────────────────── */
+function renderTeamView() {
+  // Reps
+  const maxCalls = Math.max(...teamMembers.map(r=>r.callsWeek));
+  document.getElementById('repRows').innerHTML = teamMembers.map(r => `
+    <tr>
+      <td><span class="rep-avatar ${r.low?'low':''}">${r.initials}</span>${r.name}</td>
+      <td>
+        ${r.callsToday} <span class="small">/ ${r.callsWeek}</span>
+        <div class="activity-bar"><div class="activity-bar-fill ${r.low?'low':''}" style="width:${Math.round(r.callsWeek/maxCalls*100)}%"></div></div>
+      </td>
+      <td>${r.meetingsToday} <span class="small">/ ${r.meetingsWeek}</span></td>
+      <td>${r.followupsToday} <span class="small">/ ${r.followupsWeek}</span></td>
+    </tr>`).join('');
+
+  // Pipeline
+  const maxCount = Math.max(...pipelineStages.map(s=>s.count));
+  document.getElementById('pipelineRows').innerHTML = pipelineStages.map(s=>`
+    <div class="pipeline-row">
+      <div class="pipeline-dot" style="background:${s.color}"></div>
+      <div class="pipeline-stage-name">${s.stage}</div>
+      <div class="pipeline-count">${s.count}</div>
+      <div class="pipeline-tpv">${s.tpv}</div>
+    </div>`).join('');
+
+  // Cold leads
+  document.getElementById('coldRows').innerHTML = coldLeads.map(c=>`
+    <div class="cold-row">
+      <div class="cold-days">${c.days}d</div>
+      <div class="cold-info"><strong>${c.name}</strong><span>${c.owner} · Last: ${c.lastAction}</span></div>
+      <button class="btn sm danger" onclick="openLead('${c.id}')">Open</button>
+    </div>`).join('');
+
+  // Next actions
+  document.getElementById('nextActionsRows').innerHTML = nextActions.map(a=>`
+    <div class="next-action-row">
+      <div class="next-action-rep">${a.rep}</div>
+      <div class="next-action-info"><strong>${a.lead}</strong><span>${a.action}</span></div>
+    </div>`).join('');
+}
+
+/* ─── Field Sales (Phase 2) — near me / territory / catch-up ────────────────── */
+function fmtDist(km) { return km < 1 ? Math.round(km*1000)+'m' : km+'km'; }
+
+function mapMarkup(items) {
+  const pinClass = m => m.cold ? 'cold' : m.priority === 'High' ? 'high' : '';
+  return `
+    <div class="map-radius" style="left:50%; top:82%; width:220px; height:220px;"></div>
+    ${items.map(m => `<div class="map-pin ${pinClass(m)}" style="left:${m.x}%; top:${m.y}%;" onclick="focusMerchant('${m.id}')" title="${m.name}"><div class="dot"><span>${fmtDist(m.distance)}</span></div></div>`).join('')}
+    <div class="map-you" style="left:50%; top:82%;" title="You are here"></div>
+  `;
+}
+
+function nearbyCardHtml(m) {
+  return `
+    <div class="nearby-card" onclick="openMerchantSnapshot('${m.id}')" style="cursor:pointer;">
+      <div class="nearby-dist"><strong>${fmtDist(m.distance)}</strong><span>away</span></div>
+      <div class="nearby-info">
+        <strong>${m.name}</strong>
+        <span>${m.segment} · Last visit: ${m.lastVisit}</span>
+        <div class="tag-list">
+          <span class="tag ${m.priority==='High'?'orange':''}">${m.priority} priority</span>
+          ${m.dcc?'<span class="tag blue">DCC fit</span>':''}
+          ${m.cold?'<span class="tag red">🧊 Cold — '+m.days+'d</span>':''}
+        </div>
+      </div>
+      <div class="nearby-actions">
+        <button class="btn sm primary" onclick="event.stopPropagation();openQuickCapture('${m.id}')">Log visit</button>
+      </div>
+    </div>`;
+}
+
+function renderFieldNear() {
+  const sorted = [...fieldMerchants].sort((a,b) => a.distance - b.distance);
+  document.getElementById('nearMap').innerHTML = mapMarkup(sorted);
+  document.getElementById('nearbyList').innerHTML = sorted.map(nearbyCardHtml).join('');
+}
+
+function setAreaFilter(f) {
+  state.areaFilter = f;
+  document.querySelectorAll('[data-areafilter]').forEach(b => b.classList.toggle('active', b.dataset.areafilter === f));
+  renderFieldArea();
+}
+
+function renderFieldArea() {
+  const items = fieldMerchants.filter(m => {
+    if (state.areaFilter === 'all')  return true;
+    if (state.areaFilter === 'high') return m.priority === 'High';
+    if (state.areaFilter === 'cold') return m.cold;
+    if (state.areaFilter === 'dcc')  return m.dcc;
+    return true;
+  });
+  document.getElementById('areaMap').innerHTML = mapMarkup(items);
+  document.getElementById('areaList').innerHTML = items.map(nearbyCardHtml).join('') || `<p class="small">No merchants match this filter.</p>`;
+}
+
+function focusMerchant(id) { openMerchantSnapshot(id); }
+
+/* ─── In-phone sheet — Field Sales record UI renders inside the mocked phone ─── */
+function openPhoneSheet(title, sub, bodyHtml) {
+  document.getElementById('phoneSheetHeader').innerHTML = `
+    <div><strong>${title}</strong>${sub ? `<span class="small">${sub}</span>` : ''}</div>
+    <button class="close-btn" style="width:30px;height:30px;font-size:15px;" onclick="closePhoneSheet()">×</button>`;
+  document.getElementById('phoneSheetBody').innerHTML = bodyHtml;
+  document.getElementById('phoneSheetBackdrop').classList.add('open');
+  updateSummary();
+}
+function closePhoneSheet() {
+  document.getElementById('phoneSheetBackdrop').classList.remove('open');
+  document.getElementById('phoneSheetBody').innerHTML = '';
+  document.getElementById('phoneSheetHeader').innerHTML = '';
+}
+
+/* ─── Merchant snapshot ──────────────────────────────────────────────────────── */
+function openMerchantSnapshot(id) {
+  const m = fieldMerchants.find(x => x.id === id);
+  if (!m) return;
+  const body = `
+    <div class="info-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
+      <div class="info-card highlight"><div class="label">Distance</div><div class="value">${fmtDist(m.distance)} away</div></div>
+      <div class="info-card"><div class="label">Priority</div><div class="value">${m.priority}</div></div>
+      <div class="info-card"><div class="label">Est. TPV</div><div class="value">${m.tpv}</div></div>
+      <div class="info-card"><div class="label">Last visit</div><div class="value">${m.lastVisit}</div></div>
+    </div>
+    <div class="tag-list" style="margin-bottom:14px;">
+      ${m.dcc ? '<span class="tag blue">DCC fit</span>' : ''}
+      ${m.cold ? `<span class="tag red">🧊 Cold — ${m.days}d</span>` : '<span class="tag green">Active</span>'}
+    </div>
+    <div class="info-card" style="margin-bottom:16px;">
+      <div class="label">Notes</div>
+      <div class="value" style="font-weight:500;">${m.note}</div>
+    </div>
+    <div class="button-row" style="justify-content:stretch;">
+      <button class="btn" style="flex:1;" onclick="closePhoneSheet()">Close</button>
+      <button class="btn primary" style="flex:1;" onclick="openQuickCapture('${m.id}')">⚡ Log visit</button>
+    </div>`;
+  openPhoneSheet(m.name, `${m.segment} · ${m.address}`, body);
+}
+
+/* ─── Offline capture + sync queue ───────────────────────────────────────────── */
+function toggleOffline() {
+  state.offline = !state.offline;
+  const banner = document.getElementById('offlineBanner');
+  banner.classList.toggle('online', !state.offline);
+  banner.classList.toggle('offline', state.offline);
+  document.getElementById('offlineToggleBtn').textContent = state.offline ? 'Back online' : 'Simulate offline';
+  if (state.offline) {
+    document.getElementById('offlineText').textContent = 'Offline — visits saved on device, will sync when connected.';
+    document.getElementById('offlineSub').textContent = state.syncQueue > 0 ? `${state.syncQueue} queued` : 'No visits queued yet.';
+  } else if (state.syncQueue > 0) {
+    const n = state.syncQueue; state.syncQueue = 0;
+    document.getElementById('offlineText').textContent = `Online — ${n} queued visit${n>1?'s':''} synced to Dynamics.`;
+    document.getElementById('offlineSub').textContent = 'All caught up.';
+  } else {
+    document.getElementById('offlineText').textContent = 'Online — visits sync to Dynamics instantly.';
+    document.getElementById('offlineSub').textContent = 'Tap to simulate going offline mid-route.';
+  }
+}
+
+/* ─── 30-second quick capture ─────────────────────────────────────────────────── */
+function openQuickCapture(merchantId) {
+  const nearest = [...fieldMerchants].sort((a,b)=>a.distance-b.distance)[0];
+  state.quickMerchant = merchantId || (nearest && nearest.id);
+  const m = fieldMerchants.find(x => x.id === state.quickMerchant);
+  state.flow = 'quick'; state.data = { Merchant: m ? m.name : 'Merchant' };
+  const body = `
+    <div class="step active" data-step="qStart">
+      <h3>How did it go?</h3><p class="hint">One tap. No date or time needed — this logs as happening right now.</p>
+      <div class="quick-tap-grid">
+        ${FIELD_QUICK_OUTCOMES.map(o => `<button class="quick-tap" onclick="sd('Outcome','${esc(o)}');goStep('qNext')"><span class="qi">${o==='Interested'?'👍':o==='Not interested'?'👎':o==='Follow-up needed'?'🔁':'✅'}</span>${o}</button>`).join('')}
+      </div>
+    </div>
+    <div class="step" data-step="qNext">
+      <h3>Next step</h3>
+      <div class="quick-tap-grid">
+        <button class="quick-tap" onclick="sd('Next step','Schedule follow-up');goStep('qSave')"><span class="qi">📅</span>Follow-up</button>
+        <button class="quick-tap" onclick="sd('Next step','Send email');goStep('qSave')"><span class="qi">✉️</span>Send email</button>
+        <button class="quick-tap" onclick="sd('Next step','Create opportunity');goStep('qSave')"><span class="qi">🎯</span>Opportunity</button>
+        <button class="quick-tap" onclick="sd('Next step','No action needed');goStep('qSave')"><span class="qi">✅</span>No action</button>
+      </div>
+    </div>
+    <div class="step" data-step="qSave">
+      <h3>Save visit</h3>
+      ${summary()}
+      ${state.offline ? '<div class="soft-req-notice"><strong>Saved offline</strong>Will sync to Dynamics automatically once you\'re back online.</div>' : ''}
+      <div class="button-row"><button class="btn" onclick="closePhoneSheet()">Cancel</button><button class="btn success" onclick="saveQuickCapture()">Save visit</button></div>
+    </div>`;
+  openPhoneSheet('Quick log — 30 seconds', m ? m.name : '', body);
+}
+
+function saveQuickCapture() {
+  const log = { type:'Field visit', message: state.data.Outcome || 'Visit logged', data:{...state.data}, time:now() };
+  state.logs.unshift(log);
+  if (state.offline) {
+    state.syncQueue++;
+    document.getElementById('offlineSub').textContent = `${state.syncQueue} queued`;
+  }
+  addLog(log);
+  closePhoneSheet();
+  if (state.view === 'fieldNear') renderFieldNear();
+  if (state.view === 'fieldArea') renderFieldArea();
+}
+
+/* ─── End-of-day catch-up ─────────────────────────────────────────────────────── */
+function renderCatchup() {
+  const remaining = catchupItems.filter(c => !c.done).length;
+  const pct = Math.round(((catchupItems.length - remaining) / catchupItems.length) * 100);
+  document.getElementById('catchupProgress').style.width = pct + '%';
+  document.getElementById('catchupSummary').textContent = remaining === 0
+    ? `All ${catchupItems.length} stops logged. You're caught up.`
+    : `${remaining} of ${catchupItems.length} stops from today still need a quick outcome.`;
+  document.getElementById('catchupList').innerHTML = catchupItems.map(c => `
+    <div class="catchup-card ${c.done?'done':''}">
+      <div class="catchup-info"><strong>${c.name}</strong><span>${c.time} · ${c.note}</span></div>
+      ${c.done ? '<span class="tag green">✓ Logged</span>' : ''}
+    </div>`).join('');
+  document.getElementById('catchupStartBtn').textContent = remaining === 0 ? 'All caught up ✓' : 'Start catch-up';
+  document.getElementById('catchupStartBtn').disabled = remaining === 0;
+}
+
+function startCatchup() {
+  const next = catchupItems.find(c => !c.done);
+  if (!next) return;
+  state.flow = 'catchup'; state.data = { Merchant: next.name };
+  const body = `
+    <div class="step active" data-step="cStart">
+      <h3>Outcome</h3><p class="hint">One tap per stop — moves to the next automatically.</p>
+      <div class="quick-tap-grid">
+        ${FIELD_QUICK_OUTCOMES.map(o => `<button class="quick-tap" onclick="sd('Outcome','${esc(o)}');finishCatchupStep('${next.id}')"><span class="qi">${o==='Interested'?'👍':o==='Not interested'?'👎':o==='Follow-up needed'?'🔁':'✅'}</span>${o}</button>`).join('')}
+      </div>
+    </div>`;
+  openPhoneSheet('Catch-up — ' + next.name, `Logged at ${next.time} today`, body);
+}
+
+function finishCatchupStep(id) {
+  const item = catchupItems.find(c => c.id === id);
+  if (item) item.done = true;
+  const log = { type:'Field visit (catch-up)', message: state.data.Outcome || 'Visit logged', data:{...state.data}, time:now() };
+  state.logs.unshift(log);
+  addLog(log);
+  const next = catchupItems.find(c => !c.done);
+  if (next) startCatchup(); else closePhoneSheet();
+  renderCatchup();
+}
+
+/* ─── Flows ──────────────────────────────────────────────────────────────────── */
+const outcomes = ['Interested','Not interested','Needs more information','Call back later','Wrong contact','Already using our services','Escalate to manager','Other'];
+const nextStepOpts = ['Send email','Book meeting','Schedule follow-up call','Create opportunity','Mark as not relevant','Update lead details','No further action'];
+
+function choices(items, key, next) {
+  return `<div class="choice-grid">${items.map(it=>`<button class="choice" onclick="sd('${esc(key)}','${esc(it)}');goStep('${next}')">${it}</button>`).join('')}</div>`;
+}
+function dtFields() { return `<div class="field"><label>Date</label><input id="fDate" type="date"></div><div class="field"><label>Time</label><input id="fTime" type="time"></div>`; }
+function summary() { return `<div class="data-preview"><div class="label">Structured data — saved to Dynamics</div><div id="summaryTags" class="tag-list"></div></div>`; }
+function saveRow(type,msg) { return `<div class="button-row"><button class="btn" onclick="closeDrawer()">Cancel</button><button class="btn success" onclick="doSave('${type}','${msg}')">Save to CRM</button></div>`; }
+function esc(s) { return String(s).replaceAll("'","&#39;"); }
+
+const flows = {
+  call: { title:'Call customer', sub:'PureCloud call with structured outcome', html:`
+    <div class="step active" data-step="start">
+      <div class="purecloud-box"><div class="spinner"></div><div><strong>PureCloud ready</strong><br><span style="font-size:13px;color:var(--muted)">Call initiates from this lead and outcome writes directly to Dynamics.</span></div></div>
+      <button class="btn primary" onclick="goStep('answered')">Start PureCloud call</button>
+    </div>
+    <div class="step" data-step="answered">
+      <h3>Did the customer answer?</h3><p class="hint">One tap — no typing required.</p>
+      <div class="choice-grid">
+        <button class="choice" onclick="sd('Answered','Yes');goStep('outcome')">✅ Yes — connected</button>
+        <button class="choice" onclick="sd('Answered','No');goStep('noAnswer')">📵 No — no answer</button>
+      </div>
+    </div>
+    <div class="step" data-step="noAnswer">
+      <h3>Schedule next call</h3><p class="hint">Log the missed call and set when to try again.</p>
+      ${dtFields()}
+      <div class="field"><label>Optional note</label><textarea id="fNote" placeholder="e.g. Try after lunch"></textarea></div>
+      ${summary()}${saveRow('Missed call','Follow-up call scheduled')}
+    </div>
+    <div class="step" data-step="outcome">
+      <h3>Outcome of call</h3><p class="hint">Pick the closest match. This becomes a structured CRM field — no free text needed.</p>
+      ${choices(outcomes,'Outcome','nextStep')}
+    </div>
+    <div class="step" data-step="nextStep">
+      <h3>Next step</h3><p class="hint">What happens after this call?</p>
+      ${choices(nextStepOpts,'Next step','callSave')}
+    </div>
+    <div class="step" data-step="callSave">
+      <h3>Save to CRM</h3>
+      ${summary()}
+      <div class="field"><label>Optional note</label><textarea id="fNote" placeholder="Add only what matters"></textarea></div>
+      ${saveRow('Phone call','Call outcome saved')}
+    </div>`
+  },
+  email: { title:'Send email', sub:'Template-led email with automatic CRM registration', html:`
+    <div class="step active" data-step="start">
+      <h3>Select template</h3><p class="hint">Pick a template. Preview, edit, then send. Activity is registered automatically.</p>
+      <div class="field"><label>Template</label>
+        <select id="fTemplate"><option>DCC savings explanation</option><option>Follow-up after call</option><option>Meeting confirmation</option><option>Commercial proposal intro</option><option>Re-engagement — no contact 7+ days</option></select>
+      </div>
+      <div class="field"><label>Preview</label>
+        <textarea id="fEmailBody" style="min-height:110px">Hi,\n\nFollowing up with information about how DCC can benefit your business.\n\nBest regards,\nSales team</textarea>
+      </div>
+      <button class="btn primary" onclick="sd('Template',document.getElementById('fTemplate').value);goStep('emailSent')">Send email</button>
+    </div>
+    <div class="step" data-step="emailSent">
+      <div class="confirmation">✓ Email sent. Activity prepared for CRM.</div>
+      <h3>Next step</h3>
+      ${choices(['Schedule follow-up call','Book meeting','No action needed','Mark as contacted'],'Next step','emailSave')}
+    </div>
+    <div class="step" data-step="emailSave">
+      <h3>Save email activity</h3>${summary()}${saveRow('Email','Email activity saved')}
+    </div>`
+  },
+  meeting: { title:'Book meeting', sub:'Schedule with post-meeting outcome capture', html:`
+    <div class="step active" data-step="start">
+      <h3>Book meeting</h3><p class="hint">Set the meeting type and agenda. A reminder fires after the slot to capture the outcome.</p>
+      <div class="field"><label>Meeting type</label>
+        <select id="fMeetType"><option>Phone</option><option>Microsoft Teams</option><option>On-site visit</option><option>Other</option></select>
+      </div>
+      ${dtFields()}
+      <div class="field"><label>Agenda</label>
+        <select id="fAgenda"><option>Discuss DCC opportunity</option><option>Commercial proposal</option><option>Technical follow-up</option><option>Product demo</option><option>Contract review</option></select>
+      </div>
+      <button class="btn primary" onclick="sd('Meeting type',document.getElementById('fMeetType').value);sd('Agenda',document.getElementById('fAgenda').value);goStep('meetBooked')">Save meeting</button>
+    </div>
+    <div class="step" data-step="meetBooked">
+      <div class="confirmation">✓ Meeting booked. You'll be prompted for the outcome after the slot.</div>
+      <h3>How did the meeting go?</h3><p class="hint">Capture now if already completed, or come back after.</p>
+      <div class="choice-grid">
+        <button class="choice" onclick="sd('Meeting','Completed');goStep('meetOutcome')">Completed</button>
+        <button class="choice" onclick="sd('Meeting','Not completed');goStep('meetSave')">Not completed</button>
+        <button class="choice" onclick="sd('Meeting','Rescheduled');goStep('meetSave')">Rescheduled</button>
+        <button class="choice" onclick="closeDrawer()">Log outcome later</button>
+      </div>
+    </div>
+    <div class="step" data-step="meetOutcome">
+      <h3>Meeting outcome</h3>
+      ${choices(['Interested — wants proposal','Needs technical follow-up','Not interested','Decision pending','Opportunity created','Other'],'Outcome','meetNext')}
+    </div>
+    <div class="step" data-step="meetNext">
+      <h3>Next action</h3>
+      ${choices(['Send proposal','Schedule follow-up call','Create opportunity','Update opportunity','Escalate internally','Close lead'],'Next step','meetSave')}
+    </div>
+    <div class="step" data-step="meetSave">
+      <h3>Save meeting</h3>${summary()}
+      <div class="field"><label>Optional note</label><textarea id="fNote" placeholder="Short meeting note if needed"></textarea></div>
+      ${saveRow('Meeting','Meeting outcome saved')}
+    </div>`
+  },
+  past: { title:'Register past event', sub:'Log activity that happened outside the system', html:`
+    <div class="step active" data-step="start">
+      <h3>What type of event?</h3><p class="hint">Log anything that happened — a WhatsApp call, spontaneous visit, or an Outlook email. All goes into CRM.</p>
+      <div class="choice-grid">
+        <button class="choice" onclick="sd('Event type','Phone call');goStep('pastDetails')">📞 Phone call</button>
+        <button class="choice" onclick="sd('Event type','Meeting / visit');goStep('pastDetails')">🤝 Meeting / visit</button>
+        <button class="choice" onclick="sd('Event type','Email');goStep('pastDetails')">✉️ Email</button>
+        <button class="choice" onclick="sd('Event type','Other');goStep('pastDetails')">📋 Other</button>
+      </div>
+    </div>
+    <div class="step" data-step="pastDetails">
+      <h3>When did it happen?</h3>${dtFields()}
+      <h3 style="margin-top:14px">Outcome</h3>
+      ${choices(['Interested','Not interested','Follow-up needed','Proposal requested','Issue raised','Already handled','Other'],'Outcome','pastNext')}
+    </div>
+    <div class="step" data-step="pastNext">
+      <h3>Next step</h3>
+      ${choices(['Schedule call','Send email','Book meeting','Create opportunity','Update lead','No further action'],'Next step','pastSave')}
+    </div>
+    <div class="step" data-step="pastSave">
+      <h3>Save past event</h3>${summary()}
+      <div class="field"><label>Optional note</label><textarea id="fNote" placeholder="Add context if needed"></textarea></div>
+      ${saveRow('Past event','Past event saved')}
+    </div>`
+  },
+  edit: { title:'Update lead', sub:'Guided update with stage advancement check', html:`
+    <div class="step active" data-step="start">
+      <h3>What has changed?</h3>
+      ${choices(['New contact information','Updated interest or product need','New company information','Status update','New note only','Other'],'Update type','editContact')}
+    </div>
+    <div class="step" data-step="editContact">
+      <h3>Did you contact the customer?</h3>
+      <div class="choice-grid">
+        <button class="choice" onclick="sd('Customer contacted','Yes');goStep('editMet')">Yes</button>
+        <button class="choice" onclick="sd('Customer contacted','No');goStep('editMet')">No</button>
+      </div>
+    </div>
+    <div class="step" data-step="editMet">
+      <h3>Did you meet them in person?</h3>
+      <div class="choice-grid">
+        <button class="choice" onclick="sd('Met in person','Yes');goStep('editFields')">Yes</button>
+        <button class="choice" onclick="sd('Met in person','No');goStep('editFields')">No</button>
+      </div>
+    </div>
+    <div class="step" data-step="editFields">
+      <h3>Key fields to advance stage</h3>
+      <p class="hint">These fields unlock the next pipeline stage. Fill what you know now.</p>
+      <div class="soft-req-notice"><strong>Soft required</strong>Required to advance stage — not to save this update.</div>
+      <div class="field"><label>TPV estimate (monthly)</label><input id="fTpv" type="text" placeholder="e.g. €500k / month"></div>
+      <div class="field"><label>Revenue tier</label>
+        <select id="fRevenue"><option value="">— Select —</option><option>€1–5M</option><option>€5–10M</option><option>€10–25M</option><option>€25–50M</option><option>€50–100M</option><option>€100M+</option></select>
+      </div>
+      <div class="field"><label>Primary service(s)</label>
+        <select id="fService"><option value="">— Select —</option><option>Acquiring</option><option>Acquiring + DCC</option><option>Acquiring + Terminals</option><option>Full suite</option></select>
+      </div>
+      <button class="btn primary" onclick="
+        const t=document.getElementById('fTpv').value;
+        const r=document.getElementById('fRevenue').value;
+        const s=document.getElementById('fService').value;
+        if(t)sd('TPV estimate',t);
+        if(r)sd('Revenue tier',r);
+        if(s)sd('Primary service',s);
+        goStep('editSave')
+      ">Continue</button>
+    </div>
+    <div class="step" data-step="editSave">
+      <h3>Save lead update</h3>${summary()}
+      <div class="field"><label>Optional note</label><textarea id="fNote" placeholder="Only add what matters"></textarea></div>
+      ${saveRow('Lead update','Lead updated')}
+    </div>`
+  },
+};
+
+/* ─── Drawer engine ──────────────────────────────────────────────────────────── */
+function openFlow(key) {
+  const l = sel();
+  state.flow = key; state.data = { Lead:l.name, Owner:l.owner };
+  const f = flows[key];
+  document.getElementById('drawerTitle').textContent = f.title;
+  document.getElementById('drawerSub').textContent   = f.sub;
+  document.getElementById('drawerBody').innerHTML    = f.html;
+  document.getElementById('drawerBackdrop').classList.add('open');
+  updateSummary();
+}
+function closeDrawer() { document.getElementById('drawerBackdrop').classList.remove('open'); document.getElementById('drawerBody').innerHTML = ''; }
+
+function sd(k,v)  { state.data[k] = v; updateSummary(); }
+function collectFields() {
+  const d = document.getElementById('fDate');
+  const t = document.getElementById('fTime');
+  const n = document.getElementById('fNote');
+  if (d?.value) sd('Date', d.value);
+  if (t?.value) sd('Time', t.value);
+  if (n?.value.trim()) sd('Note', n.value.trim());
+}
+function goStep(step) {
+  collectFields();
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const el = document.querySelector(`.step[data-step="${step}"]`);
+  if (el) el.classList.add('active');
+  updateSummary();
+}
+function updateSummary() {
+  const box = document.getElementById('summaryTags');
+  if (!box) return;
+  const entries = Object.entries(state.data);
+  box.innerHTML = entries.length
+    ? entries.map(([k,v])=>`<span class="tag">${k}: ${v}</span>`).join('')
+    : '<span class="tag">No selections yet</span>';
+}
+function doSave(type, msg) {
+  collectFields();
+  const log = { type, message:msg, data:{...state.data}, time:now() };
+  state.logs.unshift(log);
+  const l = sel();
+  l.logs = l.logs || [];
+  l.logs.unshift(log);
+  l.activity.unshift(`${type} · ${msg}`);
+  l.lastDate    = 'Just now';
+  l.lastTopic   = log.data.Outcome || log.data.Template || l.lastTopic;
+  l.lastActivity= `${l.owner} saved ${type}`;
+  l.daysSince   = 0;
+  if (log.data['Next step']) l.action = log.data['Next step'];
+  if (log.data.Outcome === 'Interested' || log.data['Next step'] === 'Create opportunity') {
+    if (l.stage === 'Open' || l.stage === 'Contacted') l.stage = 'Qualified';
+  }
+  addLog(log);
+  closeDrawer();
+  if (state.view === 'detail') renderDetail();
+  if (state.view === 'overview') renderLeadTable();
+}
+
+function addLog(log) {
+  const crmLog = document.getElementById('crmLog');
+  const entries = state.logs.length ? state.logs : [log];
+  crmLog.innerHTML = entries.map(item=>`
+    <div class="log-item">
+      <strong>${item.type}</strong>
+      ${fmtData(item.data)}
+      <div class="log-time">${item.time}</div>
+    </div>`).join('');
+}
+
+function fmtData(d) {
+  return Object.entries(d).map(([k,v])=>`<b>${k}:</b> ${v}`).join(' · ');
+}
+function now() { return new Date().toLocaleString(); }
+
+/* ─── Device toggle ─────────────────────────────────────────────────────────── */
+function setDevice(d) {
+  document.getElementById('prototypeFrame').classList.toggle('mobile', d === 'mobile');
+  document.getElementById('desktopBtn').classList.toggle('active', d === 'desktop');
+  document.getElementById('mobileBtn').classList.toggle('active', d === 'mobile');
+}
+
+/* ─── Action btn delegation ─────────────────────────────────────────────────── */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.action-btn');
+  if (btn?.dataset.flow) openFlow(btn.dataset.flow);
+});
+document.getElementById('drawerBackdrop').addEventListener('click', e => {
+  if (e.target.id === 'drawerBackdrop') closeDrawer();
+});
+
+/* ─── Init ───────────────────────────────────────────────────────────────────── */
+setPersona('inside');
+renderDetail();
+</script>
+</body>
+</html>
